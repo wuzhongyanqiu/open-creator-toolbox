@@ -1,0 +1,25 @@
+{
+  "name": "open-creator-toolbox",
+  "private": true,
+  "description": "A lightweight desktop launcher for open-source creative tools",
+  "license": "MIT",
+  "repository": "github:wuzhongyanqiu/open-creator-toolbox",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-opener": "^2",
+    "lucide": "^1.52.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "typescript": "~6.0.3",
+    "vite": "^8.0.16"
+  }
+}

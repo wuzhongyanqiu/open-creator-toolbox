@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="一站式发现和启动优秀开源创作工具。" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <title>Open Creator Toolbox</title>
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark"><i data-lucide="Blocks"></i></div>
+          <div><strong>Open Creator</strong><span>Toolbox</span></div>
+        </div>
+        <p class="sidebar-label">创作工具</p>
+        <nav id="category-nav" aria-label="工具分类"></nav>
+        <div class="sidebar-divider"></div>
+        <button class="nav-item" id="workflow-link">
+          <i data-lucide="Route"></i><span>工作流</span>
+        </button>
+        <div class="sidebar-spacer"></div>
+        <div class="local-card">
+          <div class="local-card-icon"><i data-lucide="ShieldCheck"></i></div>
+          <div>
+            <strong>本地优先</strong>
+            <p>只检测应用，不上传文件</p>
+          </div>
+        </div>
+        <a
+          class="github-link"
+          href="https://github.com/wuzhongyanqiu/open-creator-toolbox"
+          target="_blank"
+          rel="noreferrer"
+          ><i data-lucide="GitFork"></i><span>GitHub 项目</span
+          ><i data-lucide="ArrowUpRight"></i
+        ></a>
+      </aside>
+      <main class="main-content">
+        <header class="topbar">
+          <div class="search-box">
+            <i data-lucide="Search"></i
+            ><input
+              id="search-input"
+              type="search"
+              placeholder="搜索工具、用途或 Adobe 产品…"
+              aria-label="搜索工具"
+            /><kbd>⌘ K</kbd>
+          </div>
+          <button
+            class="icon-button"
+            id="scan-button"
+            aria-label="重新扫描应用"
+            title="重新扫描应用"
+          >
+            <i data-lucide="RefreshCw"></i>
+          </button>
+          <div class="environment">
+            <span class="environment-dot"></span
+            ><span id="environment-label">正在扫描…</span>
+          </div>
+        </header>
+        <div class="content-wrap">
+          <section class="intro">
+            <div>
+              <p class="eyebrow">OPEN SOURCE CREATIVE SUITE</p>
+              <h1>你的开源创作台</h1>
+              <p>从修图、设计到剪辑和排版，一个入口找到合适的工具。</p>
+            </div>
+            <div class="summary-stat">
+              <span id="installed-count">0</span>
+              <div>
+                <strong>本机工具</strong><small>已检测并可直接启动</small>
+              </div>
+            </div>
+          </section>
+          <section aria-labelledby="tools-title">
+            <div class="section-heading">
+              <div>
+                <h2 id="tools-title">工具箱</h2>
+                <span id="result-count">0 个工具</span>
+              </div>
+              <p>安装状态仅在你的设备上检测</p>
+            </div>
+            <div class="tool-grid" id="tool-grid"></div>
+          </section>
+          <section
+            class="workflows"
+            id="workflows"
+            aria-labelledby="workflow-title"
+          >
+            <div class="section-heading">
+              <div>
+                <h2 id="workflow-title">推荐工作流</h2>
+                <span>用开放格式连接专业工具</span>
+              </div>
+            </div>
+            <div class="workflow-list" id="workflow-list"></div>
+          </section>
+        </div>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
