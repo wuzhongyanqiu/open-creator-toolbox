@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "catalog:check": "node scripts/validate-catalog.mjs",
     "preview": "vite preview",
     "tauri": "tauri"
   },

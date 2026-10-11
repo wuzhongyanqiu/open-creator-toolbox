@@ -48,6 +48,7 @@ button {
   color: #dbe6e3;
   background: #172725;
   border-right: 1px solid #2d3b39;
+  overflow-y: auto;
 }
 .brand {
   display: flex;
@@ -355,7 +356,7 @@ kbd {
 }
 .tool-card {
   min-width: 0;
-  min-height: 244px;
+  min-height: 278px;
   display: flex;
   flex-direction: column;
   padding: 17px;
@@ -435,9 +436,28 @@ kbd {
   color: #687270;
   font-size: 10px;
 }
+.tool-meta p {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 5px 0;
+  line-height: 15px;
+}
 .tool-meta span {
-  margin-right: 7px;
+  flex: 0 0 auto;
   color: #9aa29f;
+}
+.license {
+  font-weight: 600;
+}
+.license.clear {
+  color: #27735d;
+}
+.license.verify {
+  color: #9a6a25;
+}
+.license.restricted {
+  color: #ad5147;
 }
 .tool-action {
   width: 100%;

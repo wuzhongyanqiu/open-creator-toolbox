@@ -84,6 +84,75 @@ const TOOLS: &[DesktopTool] = &[
         commands: &["ardour8", "ardour7", "ardour"],
         windows_paths: &[r"Ardour8\bin\ardour8.exe", r"Ardour7\bin\ardour7.exe"],
     },
+    DesktopTool {
+        id: "pixelorama",
+        mac_apps: &["Pixelorama.app"],
+        commands: &["pixelorama", "Pixelorama"],
+        windows_paths: &[r"Pixelorama\Pixelorama.exe", r"Pixelorama.exe"],
+    },
+    DesktopTool {
+        id: "libresprite",
+        mac_apps: &["LibreSprite.app"],
+        commands: &["libresprite", "LibreSprite"],
+        windows_paths: &[r"LibreSprite\LibreSprite.exe"],
+    },
+    DesktopTool {
+        id: "godot",
+        mac_apps: &["Godot.app"],
+        commands: &["godot", "godot4"],
+        windows_paths: &[r"Godot\Godot.exe", r"Godot\Godot_v4.exe"],
+    },
+    DesktopTool {
+        id: "makehuman",
+        mac_apps: &["MakeHuman.app"],
+        commands: &["makehuman"],
+        windows_paths: &[r"MakeHuman\makehuman.exe"],
+    },
+    DesktopTool {
+        id: "opentoonz",
+        mac_apps: &["OpenToonz.app"],
+        commands: &["opentoonz", "OpenToonz"],
+        windows_paths: &[r"OpenToonz\OpenToonz.exe"],
+    },
+    DesktopTool {
+        id: "obs",
+        mac_apps: &["OBS.app"],
+        commands: &["obs", "obs-studio"],
+        windows_paths: &[r"obs-studio\bin\64bit\obs64.exe"],
+    },
+    DesktopTool {
+        id: "lmms",
+        mac_apps: &["LMMS.app"],
+        commands: &["lmms"],
+        windows_paths: &[r"LMMS\lmms.exe"],
+    },
+    DesktopTool {
+        id: "musescore",
+        mac_apps: &["MuseScore 4.app", "MuseScore Studio 4.app"],
+        commands: &["mscore", "musescore", "musescore4"],
+        windows_paths: &[
+            r"MuseScore 4\bin\MuseScore4.exe",
+            r"MuseScore Studio 4\bin\MuseScore4.exe",
+        ],
+    },
+    DesktopTool {
+        id: "rhubarb",
+        mac_apps: &[],
+        commands: &["rhubarb"],
+        windows_paths: &[r"Rhubarb-Lip-Sync\rhubarb.exe"],
+    },
+    DesktopTool {
+        id: "comfyui",
+        mac_apps: &["ComfyUI.app"],
+        commands: &["comfy", "comfyui"],
+        windows_paths: &[r"ComfyUI\ComfyUI.exe"],
+    },
+    DesktopTool {
+        id: "invoke",
+        mac_apps: &["Invoke.app"],
+        commands: &["invokeai-web", "invokeai"],
+        windows_paths: &[r"Invoke\Invoke.exe"],
+    },
 ];
 
 fn mac_app_path(names: &[&str]) -> Option<PathBuf> {

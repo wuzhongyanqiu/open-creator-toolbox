@@ -1,0 +1,331 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-10-12",
+  "tiers": {
+    "clear": "工具或资产许可明确，可进入商业制作；仍需保留许可文本和来源快照。",
+    "verify": "工具本身可用，但模型、插件、社区资产、采样或署名义务必须逐项核对。",
+    "restricted": "仅限研究、内部原型或非商业用途，不进入发布包。"
+  },
+  "entries": [
+    {
+      "id": "blender",
+      "name": "Blender",
+      "kind": "3d-tool",
+      "license": "GPL-3.0-or-later",
+      "tier": "clear",
+      "source": "https://www.blender.org/about/license/",
+      "recommendedFor": ["modeling", "rigging", "animation", "cg", "video"],
+      "notes": "Blender 生成的美术输出归创作者；分发 Blender 插件或修改版软件时另行遵循 GPL。"
+    },
+    {
+      "id": "godot",
+      "name": "Godot",
+      "kind": "game-engine",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://godotengine.org/license/",
+      "recommendedFor": ["2d-prototype", "3d-prototype", "particles", "animation-preview"],
+      "notes": "游戏内容可采用自己的许可证；随游戏分发引擎时保留 MIT 声明。"
+    },
+    {
+      "id": "krita",
+      "name": "Krita",
+      "kind": "2d-tool",
+      "license": "GPL-3.0",
+      "tier": "clear",
+      "source": "https://krita.org/en/about/license/",
+      "recommendedFor": ["character-art", "cg", "texture", "paintover", "frame-animation"],
+      "notes": "绘画输出归创作者；发布 Krita 插件时需遵循 GPL。"
+    },
+    {
+      "id": "pixelorama",
+      "name": "Pixelorama",
+      "kind": "pixel-tool",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/Orama-Interactive/Pixelorama",
+      "recommendedFor": ["pixel-art", "sprites", "tilesets", "frame-animation"],
+      "notes": "优先用于未来像素项目和现有游戏的图标、状态动画风格化。"
+    },
+    {
+      "id": "libresprite",
+      "name": "LibreSprite",
+      "kind": "pixel-tool",
+      "license": "GPL-2.0",
+      "tier": "clear",
+      "source": "https://github.com/LibreSprite/LibreSprite",
+      "recommendedFor": ["pixel-art", "palette", "spritesheets"],
+      "notes": "适合轻量像素编辑；软件许可不限制创作输出。"
+    },
+    {
+      "id": "makehuman",
+      "name": "MakeHuman",
+      "kind": "3d-character-tool",
+      "license": "AGPL software / CC0 core assets",
+      "tier": "verify",
+      "source": "https://static.makehumancommunity.org/about/license.html",
+      "recommendedFor": ["human-base-mesh", "character-blockout", "rigging-base"],
+      "notes": "官方核心资产可按 CC0 使用；社区衣服、头发和扩展资产必须逐件核对。"
+    },
+    {
+      "id": "opentoonz",
+      "name": "OpenToonz",
+      "kind": "2d-animation-tool",
+      "license": "BSD-3-Clause",
+      "tier": "clear",
+      "source": "https://github.com/opentoonz/opentoonz/blob/master/LICENSE.txt",
+      "recommendedFor": ["2d-animation", "character-performance", "cg-shot"],
+      "notes": "适合乙游立绘演出、剧情 CG 和二维特效。"
+    },
+    {
+      "id": "comfyui",
+      "name": "ComfyUI",
+      "kind": "generative-workflow",
+      "license": "GPL-3.0 software",
+      "tier": "verify",
+      "source": "https://github.com/Comfy-Org/ComfyUI",
+      "recommendedFor": ["character-variants", "cg", "texture", "upscale", "batch-workflow"],
+      "notes": "程序开源不代表模型、LoRA、节点和输出自动可商用；每项依赖都要进入资产清单。"
+    },
+    {
+      "id": "invoke",
+      "name": "Invoke",
+      "kind": "generative-workflow",
+      "license": "Apache-2.0 software",
+      "tier": "verify",
+      "source": "https://github.com/invoke-ai/InvokeAI",
+      "recommendedFor": ["layered-cg", "inpaint", "outpaint", "batch-workflow"],
+      "notes": "适合美术可控的局部修改；模型权重许可仍需独立核对。"
+    },
+    {
+      "id": "flux1-schnell",
+      "name": "FLUX.1 Schnell",
+      "kind": "image-model",
+      "license": "Apache-2.0",
+      "tier": "clear",
+      "source": "https://huggingface.co/black-forest-labs/FLUX.1-schnell",
+      "recommendedFor": ["concept-art", "cg-draft", "background", "texture-draft"],
+      "notes": "官方模型卡明确允许商业使用；仍需避免侵权角色、商标和未经授权的风格/肖像模仿。"
+    },
+    {
+      "id": "triposr",
+      "name": "TripoSR",
+      "kind": "3d-model",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://huggingface.co/stabilityai/TripoSR",
+      "recommendedFor": ["prop-blockout", "environment-blockout", "image-to-3d"],
+      "notes": "输出只作为草模；必须经过 Blender 重拓扑、减面、UV、材质和轮廓检查。"
+    },
+    {
+      "id": "trellis2",
+      "name": "TRELLIS.2",
+      "kind": "3d-model",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/microsoft/TRELLIS.2",
+      "recommendedFor": ["high-detail-prop", "pbr-material", "image-to-3d"],
+      "notes": "官方验证环境为 A100/H100，适合作为离线高配资产工序，不适合游戏运行时生成。"
+    },
+    {
+      "id": "kenney",
+      "name": "Kenney Assets",
+      "kind": "asset-library",
+      "license": "CC0",
+      "tier": "clear",
+      "source": "https://kenney.nl/support",
+      "recommendedFor": ["ui", "icons", "pixel-art", "low-poly", "prototype"],
+      "notes": "资产页内容可商用且无需署名；Kenney 商标和 Logo 不属于资产授权。"
+    },
+    {
+      "id": "polyhaven",
+      "name": "Poly Haven",
+      "kind": "asset-library",
+      "license": "CC0",
+      "tier": "clear",
+      "source": "https://polyhaven.com/license",
+      "recommendedFor": ["hdri", "pbr-material", "3d-model", "lighting"],
+      "notes": "优先用于 3D 场景照明、材质和自然物件。"
+    },
+    {
+      "id": "ambientcg",
+      "name": "ambientCG",
+      "kind": "asset-library",
+      "license": "CC0",
+      "tier": "clear",
+      "source": "https://docs.ambientcg.com/license/",
+      "recommendedFor": ["pbr-material", "decal", "hdri", "3d-object"],
+      "notes": "下载资产可随商业游戏分发，也可保留原始文件进入内部资产库。"
+    },
+    {
+      "id": "quaternius",
+      "name": "Quaternius",
+      "kind": "asset-library",
+      "license": "QAL 1.0; older packs may be CC0",
+      "tier": "verify",
+      "source": "https://quaternius.com/license.html",
+      "recommendedFor": ["low-poly-character", "building", "prop", "animation"],
+      "notes": "2026-08-28 后的新许可允许商业项目但禁止把资产本身作为资产再销售或再分发；保存每个包下载时的许可。"
+    },
+    {
+      "id": "opengameart",
+      "name": "OpenGameArt",
+      "kind": "asset-library",
+      "license": "Per-asset",
+      "tier": "verify",
+      "source": "https://opengameart.org/content/faq",
+      "recommendedFor": ["2d", "pixel-art", "3d", "music", "sfx"],
+      "notes": "优先筛选 CC0；CC-BY 需要署名，ShareAlike/GPL 资产需要额外评估。"
+    },
+    {
+      "id": "freesound",
+      "name": "Freesound",
+      "kind": "asset-library",
+      "license": "CC0 / CC-BY / CC-BY-NC",
+      "tier": "verify",
+      "source": "https://freesound.org/help/faq/",
+      "recommendedFor": ["sfx", "ambience", "foley"],
+      "notes": "商业发行只默认采用 CC0 或完成 CC-BY 署名；明确排除 BY-NC。"
+    },
+    {
+      "id": "openvoice",
+      "name": "OpenVoice",
+      "kind": "voice-model",
+      "license": "MIT",
+      "tier": "verify",
+      "source": "https://github.com/myshell-ai/OpenVoice",
+      "recommendedFor": ["multilingual-tts", "voice-style", "character-voice"],
+      "notes": "V1/V2 可商用；只使用自有或书面授权的参考音色。"
+    },
+    {
+      "id": "cosyvoice",
+      "name": "CosyVoice",
+      "kind": "voice-model",
+      "license": "Apache-2.0 repository",
+      "tier": "verify",
+      "source": "https://github.com/FunAudioLLM/CosyVoice",
+      "recommendedFor": ["chinese-tts", "multilingual-tts", "emotion", "dialect"],
+      "notes": "仓库许可明确；具体下载权重、第三方组件和声音参考仍需登记。"
+    },
+    {
+      "id": "gpt-sovits",
+      "name": "GPT-SoVITS",
+      "kind": "voice-model",
+      "license": "MIT code",
+      "tier": "verify",
+      "source": "https://github.com/RVC-Boss/GPT-SoVITS",
+      "recommendedFor": ["few-shot-tts", "chinese-character-voice", "voice-prototype"],
+      "notes": "代码许可不能替代预训练权重、依赖模型与参考声音的授权核验。"
+    },
+    {
+      "id": "rhubarb",
+      "name": "Rhubarb Lip Sync",
+      "kind": "animation-tool",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/DanielSWolf/rhubarb-lip-sync/blob/master/LICENSE.md",
+      "recommendedFor": ["2d-lipsync", "dialogue-animation", "cg"],
+      "notes": "生成的口型时间轴归项目方，适合与 OpenToonz 或游戏内立绘系统衔接。"
+    },
+    {
+      "id": "lmms",
+      "name": "LMMS",
+      "kind": "audio-tool",
+      "license": "GPL-2.0-or-later",
+      "tier": "verify",
+      "source": "https://docs.lmms.io/user-manual/legal/license",
+      "recommendedFor": ["bgm", "loop", "midi", "synth"],
+      "notes": "编曲输出可用于商业游戏，但采样、SoundFont、预置和插件许可必须单独登记。"
+    },
+    {
+      "id": "musescore",
+      "name": "MuseScore Studio",
+      "kind": "audio-tool",
+      "license": "GPL-3.0",
+      "tier": "verify",
+      "source": "https://github.com/musescore/MuseScore",
+      "recommendedFor": ["composition", "orchestration", "midi", "score"],
+      "notes": "自行创作的乐谱和导出可用；MuseScore.com 上的他人乐谱不是开放素材库。"
+    },
+    {
+      "id": "musicgen",
+      "name": "MusicGen",
+      "kind": "music-model",
+      "license": "MIT code / CC-BY-NC 4.0 weights",
+      "tier": "restricted",
+      "source": "https://github.com/facebookresearch/audiocraft/blob/main/model_cards/MUSICGEN_MODEL_CARD.md",
+      "recommendedFor": ["internal-reference", "mood-sketch"],
+      "notes": "默认模型权重限制非商业使用，不进入五款游戏正式发布资产。"
+    },
+    {
+      "id": "obs",
+      "name": "OBS Studio",
+      "kind": "video-tool",
+      "license": "GPL-2.0-or-later",
+      "tier": "clear",
+      "source": "https://obsproject.com/help",
+      "recommendedFor": ["gameplay-capture", "store-video", "debug-recording"],
+      "notes": "无水印，可用于商业实机录制。"
+    },
+    {
+      "id": "kdenlive",
+      "name": "Kdenlive",
+      "kind": "video-tool",
+      "license": "GPL-3.0",
+      "tier": "clear",
+      "source": "https://github.com/KDE/kdenlive",
+      "recommendedFor": ["editing", "subtitle", "trailer", "color"],
+      "notes": "适合 TapTap 实机视频和宣传片剪辑。"
+    },
+    {
+      "id": "gltf-transform",
+      "name": "glTF Transform",
+      "kind": "3d-pipeline",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://gltf-transform.dev/",
+      "recommendedFor": ["gltf", "glb", "batch-optimize", "validation"],
+      "notes": "作为所有 3D 项目的统一资产后处理入口。"
+    },
+    {
+      "id": "meshoptimizer",
+      "name": "meshoptimizer / gltfpack",
+      "kind": "3d-pipeline",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://meshoptimizer.org/gltf/",
+      "recommendedFor": ["mesh-simplify", "animation-optimize", "mobile-glb"],
+      "notes": "压缩扩展需要运行时解码支持，H5 包上线前必须真机验证。"
+    },
+    {
+      "id": "ktx-software",
+      "name": "KTX-Software",
+      "kind": "texture-pipeline",
+      "license": "Apache-2.0 dominant; per-file notices",
+      "tier": "verify",
+      "source": "https://github.khronos.org/KTX-Software/license.html",
+      "recommendedFor": ["ktx2", "basis-universal", "mobile-texture"],
+      "notes": "仓库含多个许可证和少量特殊文件；使用官方工具二进制并保留第三方声明。"
+    },
+    {
+      "id": "google-fonts",
+      "name": "Google Fonts",
+      "kind": "font-library",
+      "license": "Open source per-font",
+      "tier": "clear",
+      "source": "https://developers.google.com/fonts/",
+      "recommendedFor": ["ui-font", "title-font", "store-art"],
+      "notes": "可用于商业项目；随包保存并分发每个字体自己的许可文件。"
+    },
+    {
+      "id": "game-icons",
+      "name": "Game-icons.net",
+      "kind": "icon-library",
+      "license": "Mostly CC-BY 3.0; some Public Domain",
+      "tier": "verify",
+      "source": "https://game-icons.net/faq.html",
+      "recommendedFor": ["skill-icon", "item-icon", "status-icon"],
+      "notes": "逐个记录作者并在游戏鸣谢页署名。"
+    }
+  ]
+}
