@@ -228,6 +228,26 @@
       "notes": "生成的口型时间轴归项目方，适合与 OpenToonz 或游戏内立绘系统衔接。"
     },
     {
+      "id": "inky",
+      "name": "Inky / ink",
+      "kind": "narrative-tool",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/inkle/ink",
+      "recommendedFor": ["branching-story", "dialogue", "narrative-test", "web-runtime"],
+      "notes": "Inky 可边写边试玩；inkjs 适合把编译后的剧情接入 H5 游戏。"
+    },
+    {
+      "id": "vale",
+      "name": "Vale",
+      "kind": "writing-tool",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/vale-cli/vale",
+      "recommendedFor": ["terminology", "style-guide", "copy-lint", "ci"],
+      "notes": "离线文案检查框架；适合统一角色名、世界观术语、标点和 UI 字数约束。"
+    },
+    {
       "id": "lmms",
       "name": "LMMS",
       "kind": "audio-tool",

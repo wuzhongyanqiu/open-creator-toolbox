@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   AudioLines,
   Blocks,
+  BookOpen,
   Box,
   Camera,
   CircleAlert,
@@ -39,6 +40,7 @@ type Category =
   | "video"
   | "audio"
   | "voice"
+  | "writing"
   | "resource"
   | "document";
 type LicenseTier = "clear" | "verify" | "restricted";
@@ -289,6 +291,32 @@ const tools: Tool[] = [
     license: "MIT",
     licenseTier: "clear",
     licenseNote: "生成的口型数据归项目方，可用于商业游戏。",
+  },
+  {
+    id: "inky",
+    name: "Inky / ink",
+    summary: "编写、试玩和编译多分支剧情，对 H5 可接入官方 JavaScript 运行时 inkjs",
+    replaces: "散落在代码里的剧情分支",
+    categories: ["writing"],
+    color: "#35445a",
+    mark: "ink",
+    url: "https://github.com/inkle/inky/releases",
+    license: "MIT",
+    licenseTier: "clear",
+    licenseNote: "适合零点回声、山海急诊和后续乙游的分支剧情源文件。",
+  },
+  {
+    id: "vale",
+    name: "Vale",
+    summary: "把人名、术语、标点、禁用词和文风规范变成可在 CI 执行的文案检查",
+    replaces: "人工逐篇检查文案一致性",
+    categories: ["writing"],
+    color: "#2d6d62",
+    mark: "V",
+    url: "https://vale.sh/",
+    license: "MIT",
+    licenseTier: "clear",
+    licenseNote: "离线运行；建议为每个世界观维护专名表和 UI 字数规则。",
   },
   {
     id: "comfyui",
@@ -597,6 +625,13 @@ const workflows = [
     note: "参考声音必须留存授权证据",
   },
   {
+    icon: "BookOpen",
+    title: "分支剧情与文案",
+    description: "编写、试玩、导出与术语一致性检查",
+    steps: ["Inky", "inkjs", "Vale", "JSON"],
+    note: "剧情源文件与程序状态分离",
+  },
+  {
     icon: "PackageOpen",
     title: "像素风新项目",
     description: "像素原画、动画与通用素材",
@@ -643,6 +678,7 @@ const categories: Array<{ id: "all" | Category; label: string; icon: string }> =
     { id: "video", label: "视频特效", icon: "Clapperboard" },
     { id: "audio", label: "音频制作", icon: "AudioLines" },
     { id: "voice", label: "角色配音", icon: "Mic2" },
+    { id: "writing", label: "剧情文案", icon: "BookOpen" },
     { id: "resource", label: "开放资源", icon: "PackageOpen" },
     { id: "document", label: "文档 PDF", icon: "Files" },
   ];
@@ -658,6 +694,7 @@ const lucideIcons = {
   ArrowUpRight,
   AudioLines,
   Blocks,
+  BookOpen,
   Box,
   Camera,
   CircleAlert,

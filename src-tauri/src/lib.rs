@@ -142,6 +142,18 @@ const TOOLS: &[DesktopTool] = &[
         windows_paths: &[r"Rhubarb-Lip-Sync\rhubarb.exe"],
     },
     DesktopTool {
+        id: "inky",
+        mac_apps: &["Inky.app"],
+        commands: &["inky"],
+        windows_paths: &[r"Inky\Inky.exe"],
+    },
+    DesktopTool {
+        id: "vale",
+        mac_apps: &[],
+        commands: &["vale"],
+        windows_paths: &[r"Vale\vale.exe"],
+    },
+    DesktopTool {
         id: "comfyui",
         mac_apps: &["ComfyUI.app"],
         commands: &["comfy", "comfyui"],

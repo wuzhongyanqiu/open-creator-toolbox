@@ -15,6 +15,7 @@
 | 3D 角色 | MakeHuman 官方核心资产 + Blender | GLB | MakeHuman 核心资产 CC0；社区扩展逐件核对 |
 | 3D 场景与道具 | Blender + Poly Haven/ambientCG/Kenney | GLB + WebP/KTX2 | 优先 CC0；生成式草模必须人工重拓扑 |
 | 配音 | OpenVoice 或 CosyVoice + Audacity | OGG/AAC/WAV 源档 | 只使用自有或书面授权音色；记录模型和参考音频授权 |
+| 剧情文案 | Inky/ink + inkjs + Vale | `.ink` 源文件 + JSON | 剧情与程序状态分离；专名、标点和 UI 字数进入自动检查 |
 | BGM | MuseScore/LMMS + Ardour/Audacity | OGG 循环 + WAV 母版 | 自行作曲；采样、SoundFont、插件逐项核对 |
 | 音效 | 自录 + Freesound CC0 + Audacity | OGG/WAV | 默认 CC0；CC-BY 必须进入署名清单；排除 BY-NC |
 | 实机视频 | OBS + Kdenlive + FFmpeg | H.264 MP4 | 只使用已登记的游戏资产、音乐与字体 |
@@ -46,10 +47,11 @@
 
 ### 零点回声
 
-1. 优先补全三位男主的表情差分、姿态差分和关键 CG，而不是立即转全 3D。
-2. OpenVoice/CosyVoice 制作角色样音；Rhubarb 输出口型时间轴，连接立绘眨眼、呼吸和嘴型状态。
-3. 雨声、列车、磁带和电台底噪优先自录或使用 Freesound CC0，避免 BY-NC。
-4. Kdenlive 制作剧情预告与 TapTap 实机视频，确保画面主要展示实际互动而非纯 CG。
+1. 先把三条角色线迁入 ink，用 Inky 逐分支试玩，再导出 JSON 给 H5 运行时；Vale 检查角色称谓、时间线术语和标点。
+2. 优先补全三位男主的表情差分、姿态差分和关键 CG，而不是立即转全 3D。
+3. OpenVoice/CosyVoice 制作角色样音；Rhubarb 输出口型时间轴，连接立绘眨眼、呼吸和嘴型状态。
+4. 雨声、列车、磁带和电台底噪优先自录或使用 Freesound CC0，避免 BY-NC。
+5. Kdenlive 制作剧情预告与 TapTap 实机视频，确保画面主要展示实际互动而非纯 CG。
 
 ### 雾港夜市
 
@@ -140,3 +142,5 @@ assets/
 - KTX-Software：https://github.khronos.org/KTX-Software/license.html
 - Google Fonts：https://developers.google.com/fonts/
 - Game-icons.net：https://game-icons.net/faq.html
+- ink/Inky：https://github.com/inkle/ink 和 https://github.com/inkle/inky
+- Vale：https://github.com/vale-cli/vale
