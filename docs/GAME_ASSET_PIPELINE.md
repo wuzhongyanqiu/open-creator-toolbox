@@ -1,6 +1,6 @@
 # 五款游戏共用资产工具链
 
-更新日期：2026-10-12
+更新日期：2026-10-13
 
 这份清单服务于当前五款 TapTap H5 游戏，也作为后续新游戏的默认资产基线。它区分工具软件许可、模型权重许可、下载素材许可和参考声音授权；四者不能互相替代。
 
@@ -14,7 +14,7 @@
 | 像素画 | Pixelorama，LibreSprite 作为备选 | PNG 精灵表 + JSON | 自制；外部素材优先 CC0 |
 | 3D 角色 | MakeHuman 官方核心资产 + Blender | GLB | MakeHuman 核心资产 CC0；社区扩展逐件核对 |
 | 3D 场景与道具 | Blender + Poly Haven/ambientCG/Kenney | GLB + WebP/KTX2 | 优先 CC0；生成式草模必须人工重拓扑 |
-| 配音 | OpenVoice 或 CosyVoice + Audacity | OGG/AAC/WAV 源档 | 只使用自有或书面授权音色；记录模型和参考音频授权 |
+| 配音 | VoiceStudio 编排 OpenVoice/CosyVoice/GPT-SoVITS + Audacity | OGG/AAC/WAV 源档 | VoiceStudio 只作本地制作工作台；逐项记录引擎、模型和参考音频授权 |
 | 剧情文案 | Inky/ink + inkjs + Vale | `.ink` 源文件 + JSON | 剧情与程序状态分离；专名、标点和 UI 字数进入自动检查 |
 | BGM | MuseScore/LMMS + Ardour/Audacity | OGG 循环 + WAV 母版 | 自行作曲；采样、SoundFont、插件逐项核对 |
 | 音效 | 自录 + Freesound CC0 + Audacity | OGG/WAV | 默认 CC0；CC-BY 必须进入署名清单；排除 BY-NC |
@@ -37,6 +37,7 @@
 2. 场景材质优先从 Poly Haven、ambientCG 取 CC0 基础，再进行风格化重绘。
 3. 用 glTF Transform/gltfpack 输出移动端 GLB；单个普通单位建议控制在 8k-20k 三角形，首领 30k-50k，贴图以 1K 为主。
 4. 保留现有 2D 版本作为低配降级；3D 版必须在 TapTap Android WebView 真机测试。
+5. VoiceStudio 适合批量生成塔防英雄登场、首领预警和技能短句；高频战斗反馈仍优先使用轻量音效，避免语音轰炸。
 
 ### 山海异兽急诊录
 
@@ -44,6 +45,7 @@
 2. ComfyUI/Invoke 只做构图变体、背景延展和局部重绘，最终角色由人工 paint-over 定稿。
 3. 用 OpenVoice/CosyVoice 生成已授权的异兽短句与旁白，再由 Audacity 做响度、降噪和气口调整。
 4. 档案 UI 可采用 Game-icons.net，但作者与图标名称必须进入鸣谢清单。
+5. VoiceStudio 适合为十种异兽制作差异化叫声、诊疗反馈和山海司旁白，并用批处理保证响度与命名一致。
 
 ### 零点回声
 
@@ -52,6 +54,7 @@
 3. OpenVoice/CosyVoice 制作角色样音；Rhubarb 输出口型时间轴，连接立绘眨眼、呼吸和嘴型状态。
 4. 雨声、列车、磁带和电台底噪优先自录或使用 Freesound CC0，避免 BY-NC。
 5. Kdenlive 制作剧情预告与 TapTap 实机视频，确保画面主要展示实际互动而非纯 CG。
+6. VoiceStudio 优先用于三位男主和系统旁白的角色音色设计、关键句批量生成与对白转写；当前原型音频可作为管线验证，正式版必须使用已授权音色重制。
 
 ### 雾港夜市
 
@@ -59,6 +62,7 @@
 2. Quaternius 2026 年启用 QAL 1.0；可以用于商业游戏，但不要把原始包作为素材库再分发，并保存下载时的许可快照。
 3. BGM 用 LMMS/MuseScore 自行编写七夜主题变奏；海浪、雨棚、锅铲和人群声使用自录或 CC0。
 4. 经营核心仍保持 2D UI，3D 只承担可检查的摊位与街区反馈，避免包体和加载时间失控。
+5. VoiceStudio 适合制作摊主招呼、稀有顾客登场和连击播报；只覆盖高价值短句，普通订单维持音效反馈。
 
 ### 星契回廊
 
@@ -66,6 +70,11 @@
 2. TripoSR/TRELLIS.2 只用于道具和场景草模，必须经过人工重拓扑、UV、材质统一和轮廓审核。
 3. CG 采用统一的角色 LoRA/参考图工作流，但只有许可证明确、训练素材来源可说明的模型才能进入商业包。
 4. 配音优先覆盖抽卡登场、技能和章节关键句，减少长对白的成本与听觉疲劳。
+5. 用 VoiceStudio 的批量生成与本地 API 固化角色台词清单，按角色、情绪、语言和版本保存可追溯输出。
+
+## VoiceStudio 使用边界
+
+VoiceStudio 是值得保留的制作工具，但不是游戏运行时依赖。它提供本地角色音色设计、短样本克隆、批量 TTS、配音、转写、OpenAI 兼容 API 与 MCP，适合把五款游戏的台词表转成可审查音频资产。项目本体采用 AGPL-3.0；内部直接使用未修改程序制作音频通常不要求游戏采用同一许可证，但修改后对外提供网络服务会触发对应源代码义务。每个可选引擎、模型权重和参考音色有独立许可，必须在资产清单中记录，严禁未经授权克隆真人或声优。
 
 ## 后续新游戏模板
 

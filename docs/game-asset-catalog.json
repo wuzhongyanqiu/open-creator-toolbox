@@ -218,6 +218,16 @@
       "notes": "代码许可不能替代预训练权重、依赖模型与参考声音的授权核验。"
     },
     {
+      "id": "voicestudio",
+      "name": "VoiceStudio",
+      "kind": "voice-workstation",
+      "license": "AGPL-3.0 application; per-engine and per-model licenses",
+      "tier": "verify",
+      "source": "https://github.com/debpalash/VoiceStudio",
+      "recommendedFor": ["voice-design", "voice-cloning", "batch-tts", "dubbing", "transcription", "local-api"],
+      "notes": "可作为本地制作工作台并通过 OpenAI 兼容 API 或 MCP 批量生成游戏台词；不要把应用本体嵌入闭源客户端，各引擎、模型权重与参考声音逐项登记。"
+    },
+    {
       "id": "rhubarb",
       "name": "Rhubarb Lip Sync",
       "kind": "animation-tool",

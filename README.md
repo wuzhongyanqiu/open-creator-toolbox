@@ -24,7 +24,7 @@
 | 3D 与游戏制作 | Blender、Godot、MakeHuman、TripoSR、TRELLIS.2 |
 | 矢量与排版 | Inkscape、Penpot、Scribus |
 | 视频与特效 | OBS Studio、Kdenlive、Blender、Natron |
-| 音频与配音 | Audacity、Ardour、LMMS、MuseScore Studio、OpenVoice、CosyVoice |
+| 音频与配音 | Audacity、Ardour、LMMS、MuseScore Studio、VoiceStudio、OpenVoice、CosyVoice |
 | 剧情与文案 | Inky/ink、Vale |
 | 开放素材 | Kenney、Poly Haven、ambientCG、OpenGameArt、Freesound |
 | PDF | Stirling PDF |
