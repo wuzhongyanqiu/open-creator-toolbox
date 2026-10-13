@@ -10,6 +10,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "catalog:check": "node scripts/validate-catalog.mjs",
+    "voice:check": "node scripts/check-voicestudio.mjs",
     "preview": "vite preview",
     "tauri": "tauri"
   },
