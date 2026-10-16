@@ -1,0 +1,769 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-10-16",
+  "tiers": {
+    "clear": "工具或资产许可明确，可进入商业制作；仍需保留许可文本和来源快照。",
+    "verify": "工具本身可用，但模型、插件、社区资产、采样或署名义务必须逐项核对。",
+    "restricted": "仅限研究、内部原型或非商业用途，不进入发布包。"
+  },
+  "categories": {
+    "agent-access": "Agent 可直接调用的 MCP、Skill、CLI",
+    "runtime-library": "游戏运行时与编辑器库",
+    "asset-generation": "美术资产生成",
+    "audio": "音频生成与素材",
+    "promo-video": "宣发视频录制、剪辑、生成",
+    "distribution": "多平台分发"
+  },
+  "entries": [
+    {
+      "id": "playwright",
+      "name": "Playwright + Playwright MCP",
+      "category": "agent-access",
+      "kind": "test-automation",
+      "license": "Apache-2.0",
+      "tier": "clear",
+      "source": "https://github.com/microsoft/playwright",
+      "recommendedFor": [
+        "screenshots",
+        "gameplay-capture",
+        "smoke-test",
+        "taptap-upload"
+      ],
+      "localStatus": "installed",
+      "notes": "recordVideo 不录音频，配合 scripts/promo/webaudio-tap.js。"
+    },
+    {
+      "id": "mcp-for-blender",
+      "name": "MCP for Blender（原 blender-mcp）",
+      "category": "agent-access",
+      "kind": "mcp",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/ahujasid/blender-mcp",
+      "recommendedFor": [
+        "3d-modeling",
+        "scene-layout",
+        "render"
+      ],
+      "localStatus": "not-installed",
+      "notes": "插件可执行任意 Python，仅本地开启；uvx blender-mcp 兼容。"
+    },
+    {
+      "id": "phaser4-skills",
+      "name": "Phaser 4 Agent Skills",
+      "category": "agent-access",
+      "kind": "skill",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/phaserjs/phaser/releases/tag/v4.0.0",
+      "recommendedFor": [
+        "phaser-reference",
+        "v3-to-v4-migration"
+      ],
+      "localStatus": "not-installed",
+      "notes": "本工作区仍为 Phaser 3.90，只作参考。"
+    },
+    {
+      "id": "phaser-editor-mcp",
+      "name": "Phaser Editor v5 MCP",
+      "category": "agent-access",
+      "kind": "mcp",
+      "license": "Proprietary editor",
+      "tier": "verify",
+      "source": "https://www.phaser.io/news/2026/04/phaser-editor-v5-release",
+      "recommendedFor": [
+        "scene-editing"
+      ],
+      "localStatus": "not-installed",
+      "notes": "需购买编辑器，目前无项目使用。"
+    },
+    {
+      "id": "phaser-game-agent",
+      "name": "Phaser Game Agent",
+      "category": "agent-access",
+      "kind": "remote-mcp",
+      "license": "Commercial service",
+      "tier": "verify",
+      "source": "https://www.phaser.io/agent/mcp",
+      "recommendedFor": [
+        "cloud-prototype"
+      ],
+      "localStatus": "not-installed",
+      "notes": "云端沙盒按分钟和积分计费，不适合现有仓库。"
+    },
+    {
+      "id": "pixellab",
+      "name": "PixelLab MCP/API",
+      "category": "agent-access",
+      "kind": "remote-mcp",
+      "license": "Commercial service",
+      "tier": "verify",
+      "source": "https://www.pixellab.ai/mcp",
+      "recommendedFor": [
+        "pixel-sprites",
+        "directional-characters",
+        "tilesets",
+        "vfx"
+      ],
+      "localStatus": "not-installed",
+      "notes": "订阅制；Token 只走环境变量。"
+    },
+    {
+      "id": "retro-diffusion",
+      "name": "Retro Diffusion API/MCP",
+      "category": "agent-access",
+      "kind": "remote-mcp",
+      "license": "Commercial service",
+      "tier": "verify",
+      "source": "https://github.com/Retro-Diffusion/api-examples",
+      "recommendedFor": [
+        "pixel-art",
+        "pixel-animation",
+        "lowpoly-3d"
+      ],
+      "localStatus": "not-installed",
+      "notes": "输出归用户；条款禁止用输出训练 AI。"
+    },
+    {
+      "id": "awesome-gamedev-agent-skills",
+      "name": "awesome-gamedev-agent-skills",
+      "category": "agent-access",
+      "kind": "skill",
+      "license": "See repository",
+      "tier": "verify",
+      "source": "https://github.com/gamedev-skills/awesome-gamedev-agent-skills",
+      "recommendedFor": [
+        "phaser",
+        "pixijs",
+        "threejs",
+        "godot"
+      ],
+      "localStatus": "not-installed",
+      "notes": "74 个 skill，按需挑选，不全量安装。"
+    },
+    {
+      "id": "gamestudio",
+      "name": "GameStudio",
+      "category": "agent-access",
+      "kind": "agent-scaffold",
+      "license": "See repository",
+      "tier": "verify",
+      "source": "https://github.com/bullish0x/GameStudio",
+      "recommendedFor": [
+        "gdd-templates",
+        "qa-templates"
+      ],
+      "localStatus": "not-installed",
+      "notes": "只借鉴模板，不覆盖工作区分工。"
+    },
+    {
+      "id": "godot-mcp-hybridindie",
+      "name": "godot-mcp（hybridindie）",
+      "category": "agent-access",
+      "kind": "mcp",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/hybridindie/godot-mcp",
+      "recommendedFor": [
+        "godot-editor-control"
+      ],
+      "localStatus": "not-installed",
+      "notes": "仅新 Godot 项目需要。"
+    },
+    {
+      "id": "godot-agent-gda",
+      "name": "gda（Godot Agent CLI/MCP）",
+      "category": "agent-access",
+      "kind": "cli",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/aigengame/godot-agent",
+      "recommendedFor": [
+        "godot-headless-validation"
+      ],
+      "localStatus": "not-installed",
+      "notes": "仅新 Godot 项目需要。"
+    },
+    {
+      "id": "openmontage-skills",
+      "name": "OpenMontage .agents/skills",
+      "category": "agent-access",
+      "kind": "skill",
+      "license": "AGPL-3.0 project / per-skill",
+      "tier": "verify",
+      "source": "https://github.com/calesthio/OpenMontage",
+      "recommendedFor": [
+        "threejs",
+        "gsap",
+        "ffmpeg",
+        "hyperframes",
+        "remotion",
+        "acestep"
+      ],
+      "localStatus": "installed",
+      "notes": "本地 90 个 skill，路径 OpenMontage/.agents/skills/<name>/SKILL.md。"
+    },
+    {
+      "id": "gsap",
+      "name": "GSAP",
+      "category": "runtime-library",
+      "kind": "library",
+      "license": "GSAP Standard License (free commercial)",
+      "tier": "clear",
+      "source": "https://gsap.com/community/standard-license/",
+      "recommendedFor": [
+        "tween",
+        "ui-motion",
+        "timeline"
+      ],
+      "localStatus": "not-installed",
+      "notes": "2025-04-30 起含原付费插件全部免费商用。"
+    },
+    {
+      "id": "zzfx",
+      "name": "ZzFX",
+      "category": "runtime-library",
+      "kind": "library",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/KilledByAPixel/ZzFX",
+      "recommendedFor": [
+        "procedural-sfx",
+        "zero-asset-audio"
+      ],
+      "localStatus": "not-installed",
+      "notes": "<1KB，适合星契回廊零素材音效包。"
+    },
+    {
+      "id": "jsfxr",
+      "name": "jsfxr",
+      "category": "runtime-library",
+      "kind": "library",
+      "license": "Unlicense",
+      "tier": "clear",
+      "source": "https://github.com/chr15m/jsfxr",
+      "recommendedFor": [
+        "retro-sfx",
+        "sfx-baking"
+      ],
+      "localStatus": "not-installed",
+      "notes": "可在 Node 中 toWave 烘焙 WAV。"
+    },
+    {
+      "id": "howler",
+      "name": "howler.js",
+      "category": "runtime-library",
+      "kind": "library",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/goldfire/howler.js",
+      "recommendedFor": [
+        "audio-playback",
+        "audio-sprites"
+      ],
+      "localStatus": "not-installed",
+      "notes": "WebAudio 模式可被 webaudio-tap 录制。"
+    },
+    {
+      "id": "three-quarks",
+      "name": "three.quarks",
+      "category": "runtime-library",
+      "kind": "library",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/Alchemist0823/three.quarks",
+      "recommendedFor": [
+        "particles-3d"
+      ],
+      "localStatus": "not-installed",
+      "notes": "three/R3F 粒子。"
+    },
+    {
+      "id": "pmndrs-postprocessing",
+      "name": "postprocessing（pmndrs）",
+      "category": "runtime-library",
+      "kind": "library",
+      "license": "Zlib",
+      "tier": "clear",
+      "source": "https://github.com/pmndrs/postprocessing",
+      "recommendedFor": [
+        "bloom",
+        "screen-effects"
+      ],
+      "localStatus": "not-installed",
+      "notes": "移动端注意性能，真机验证。"
+    },
+    {
+      "id": "rive",
+      "name": "Rive runtimes",
+      "category": "runtime-library",
+      "kind": "library",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/rive-app/rive-wasm",
+      "recommendedFor": [
+        "state-machine-animation",
+        "character-expressions"
+      ],
+      "localStatus": "not-installed",
+      "notes": "编辑器为在线服务，运行时 MIT。"
+    },
+    {
+      "id": "lottie-web",
+      "name": "lottie-web",
+      "category": "runtime-library",
+      "kind": "library",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/airbnb/lottie-web",
+      "recommendedFor": [
+        "ui-animation",
+        "vector-animation"
+      ],
+      "localStatus": "not-installed",
+      "notes": ""
+    },
+    {
+      "id": "ldtk",
+      "name": "LDtk",
+      "category": "runtime-library",
+      "kind": "library",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/deepnight/ldtk",
+      "recommendedFor": [
+        "level-design",
+        "tilemap"
+      ],
+      "localStatus": "not-installed",
+      "notes": ""
+    },
+    {
+      "id": "tiled",
+      "name": "Tiled",
+      "category": "runtime-library",
+      "kind": "library",
+      "license": "GPL-2.0 (editor) / output owned by author",
+      "tier": "clear",
+      "source": "https://github.com/mapeditor/tiled",
+      "recommendedFor": [
+        "level-design",
+        "tilemap"
+      ],
+      "localStatus": "not-installed",
+      "notes": "Phaser 3 原生支持 Tiled JSON。"
+    },
+    {
+      "id": "free-tex-packer",
+      "name": "Free Texture Packer",
+      "category": "runtime-library",
+      "kind": "library",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/odrick/free-tex-packer",
+      "recommendedFor": [
+        "texture-atlas"
+      ],
+      "localStatus": "not-installed",
+      "notes": ""
+    },
+    {
+      "id": "spector-js",
+      "name": "Spector.js",
+      "category": "runtime-library",
+      "kind": "library",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/BabylonJS/Spector.js",
+      "recommendedFor": [
+        "webgl-debug",
+        "performance"
+      ],
+      "localStatus": "not-installed",
+      "notes": ""
+    },
+    {
+      "id": "spine",
+      "name": "Spine",
+      "category": "runtime-library",
+      "kind": "animation-tool",
+      "license": "Proprietary; runtimes require Spine Editor license",
+      "tier": "verify",
+      "source": "https://us.esotericsoftware.com/spine-runtimes-license",
+      "recommendedFor": [
+        "skeletal-animation"
+      ],
+      "localStatus": "not-installed",
+      "notes": "运行时不是免费的，集成时必须持有编辑器授权。"
+    },
+    {
+      "id": "hunyuan3d-21",
+      "name": "Hunyuan3D 2.1",
+      "category": "asset-generation",
+      "kind": "model",
+      "license": "Tencent Hunyuan 3D 2.1 Community License",
+      "tier": "verify",
+      "source": "https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1/blob/main/LICENSE",
+      "recommendedFor": [
+        "3d-draft"
+      ],
+      "localStatus": "not-installed",
+      "notes": "不适用于欧盟/英国/韩国；MAU>100 万需申请；分发附 Notice。"
+    },
+    {
+      "id": "meshy",
+      "name": "Meshy",
+      "category": "asset-generation",
+      "kind": "service",
+      "license": "Commercial service; free plan CC BY 4.0",
+      "tier": "verify",
+      "source": "https://help.meshy.ai/en/articles/16102098-can-i-use-meshy-assets-commercially",
+      "recommendedFor": [
+        "3d-draft"
+      ],
+      "localStatus": "not-installed",
+      "notes": "免费版必须署名 Meshy；付费版归用户。"
+    },
+    {
+      "id": "ace-step",
+      "name": "ACE-Step",
+      "category": "audio",
+      "kind": "model",
+      "license": "Apache-2.0",
+      "tier": "verify",
+      "source": "https://github.com/ace-step/ACE-Step",
+      "recommendedFor": [
+        "bgm",
+        "jingle"
+      ],
+      "localStatus": "not-installed",
+      "notes": "权重可商用，训练数据无担保；保存 prompt/seed。"
+    },
+    {
+      "id": "sonniss-gdc",
+      "name": "Sonniss GDC Game Audio Bundle",
+      "category": "audio",
+      "kind": "asset-library",
+      "license": "Sonniss GDC Bundle License",
+      "tier": "clear",
+      "source": "https://sonniss.com/gdc-bundle-license/",
+      "recommendedFor": [
+        "sfx",
+        "promo-sfx"
+      ],
+      "localStatus": "not-installed",
+      "notes": "免署名可商用；禁止 AI 训练和素材再分发。"
+    },
+    {
+      "id": "mmaudio",
+      "name": "MMAudio",
+      "category": "audio",
+      "kind": "model",
+      "license": "MIT code / CC-BY-NC weights",
+      "tier": "restricted",
+      "source": "https://github.com/hkchengrex/MMAudio",
+      "recommendedFor": [
+        "foley-reference"
+      ],
+      "localStatus": "not-installed",
+      "notes": "仅内部参考。"
+    },
+    {
+      "id": "hunyuanvideo-foley",
+      "name": "HunyuanVideo-Foley",
+      "category": "audio",
+      "kind": "model",
+      "license": "Tencent Hunyuan Community License",
+      "tier": "verify",
+      "source": "https://github.com/Tencent-Hunyuan/HunyuanVideo-Foley",
+      "recommendedFor": [
+        "foley"
+      ],
+      "localStatus": "not-installed",
+      "notes": "地域限制同 Hunyuan 系列。"
+    },
+    {
+      "id": "indextts2",
+      "name": "IndexTTS2",
+      "category": "audio",
+      "kind": "model",
+      "license": "bilibili Model Use License",
+      "tier": "verify",
+      "source": "https://github.com/index-tts/index-tts",
+      "recommendedFor": [
+        "tts",
+        "voice-acting"
+      ],
+      "localStatus": "not-installed",
+      "notes": "MAU>1 亿或年收入>10 亿元需单独授权；随附许可副本。"
+    },
+    {
+      "id": "fish-speech",
+      "name": "Fish Speech / OpenAudio",
+      "category": "audio",
+      "kind": "model",
+      "license": "Fish Audio Research & Community License",
+      "tier": "verify",
+      "source": "https://github.com/fishaudio/fish-speech",
+      "recommendedFor": [
+        "tts"
+      ],
+      "localStatus": "not-installed",
+      "notes": "社区商用要求年收入 < 50 万美元；以下载时许可为准。"
+    },
+    {
+      "id": "webaudio-tap",
+      "name": "webaudio-tap.js（本仓库）",
+      "category": "promo-video",
+      "kind": "script",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/wuzhongyanqiu/open-creator-toolbox",
+      "recommendedFor": [
+        "gameplay-audio-capture"
+      ],
+      "localStatus": "installed",
+      "notes": "修复 Playwright 录屏静音；叠塔守卫实测 -24.9 LUFS。"
+    },
+    {
+      "id": "caption-card",
+      "name": "caption-card.py（本仓库）",
+      "category": "promo-video",
+      "kind": "script",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/wuzhongyanqiu/open-creator-toolbox",
+      "recommendedFor": [
+        "captions",
+        "meme-text"
+      ],
+      "localStatus": "installed",
+      "notes": "替代缺失的 drawtext；发布需 --font 指定 OFL 字体。"
+    },
+    {
+      "id": "ffmpeg-local",
+      "name": "FFmpeg 8.1（Homebrew）",
+      "category": "promo-video",
+      "kind": "video-tool",
+      "license": "LGPL/GPL",
+      "tier": "clear",
+      "source": "https://www.ffmpeg.org/legal.html",
+      "recommendedFor": [
+        "edit",
+        "encode",
+        "loudnorm",
+        "gif"
+      ],
+      "localStatus": "installed",
+      "notes": "无 drawtext/libass；需要时装 keg-only ffmpeg-full。"
+    },
+    {
+      "id": "scrcpy",
+      "name": "scrcpy",
+      "category": "promo-video",
+      "kind": "capture-tool",
+      "license": "Apache-2.0",
+      "tier": "clear",
+      "source": "https://github.com/Genymobile/scrcpy",
+      "recommendedFor": [
+        "android-device-recording"
+      ],
+      "localStatus": "not-installed",
+      "notes": "TapTap 真机 WebView 录屏。"
+    },
+    {
+      "id": "hyperframes",
+      "name": "HyperFrames",
+      "category": "promo-video",
+      "kind": "video-framework",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/heygen-com/hyperframes",
+      "recommendedFor": [
+        "title-cards",
+        "motion-graphics",
+        "promo"
+      ],
+      "localStatus": "installed",
+      "notes": "OpenMontage 已装；确定性渲染，适合 Agent。"
+    },
+    {
+      "id": "remotion",
+      "name": "Remotion",
+      "category": "promo-video",
+      "kind": "video-framework",
+      "license": "Remotion License (free <=3 people)",
+      "tier": "verify",
+      "source": "https://www.remotion.dev/docs/license/faq",
+      "recommendedFor": [
+        "promo",
+        "react-video"
+      ],
+      "localStatus": "installed",
+      "notes": "团队超过 3 人需 Company License。"
+    },
+    {
+      "id": "pyjianyingdraft",
+      "name": "pyJianYingDraft",
+      "category": "promo-video",
+      "kind": "library",
+      "license": "See repository",
+      "tier": "verify",
+      "source": "https://github.com/GuanYixuan/pyJianYingDraft",
+      "recommendedFor": [
+        "capcut-drafts",
+        "batch-edit"
+      ],
+      "localStatus": "not-installed",
+      "notes": "macOS 只生成草稿，导出需 Windows；剪映素材按剪映条款。"
+    },
+    {
+      "id": "auto-editor",
+      "name": "auto-editor",
+      "category": "promo-video",
+      "kind": "cli",
+      "license": "Unlicense (license keys for some features)",
+      "tier": "verify",
+      "source": "https://github.com/WyattBlue/auto-editor",
+      "recommendedFor": [
+        "silence-cut",
+        "motion-cut"
+      ],
+      "localStatus": "not-installed",
+      "notes": "30.x 起多输入/高分辨率需 key。"
+    },
+    {
+      "id": "wan22",
+      "name": "Wan2.2",
+      "category": "promo-video",
+      "kind": "model",
+      "license": "Apache-2.0",
+      "tier": "verify",
+      "source": "https://github.com/Wan-Video/Wan2.2",
+      "recommendedFor": [
+        "image-to-video",
+        "character-skit"
+      ],
+      "localStatus": "not-installed",
+      "notes": "需远程 GPU；成片需 AI 标识。"
+    },
+    {
+      "id": "latentsync",
+      "name": "LatentSync",
+      "category": "promo-video",
+      "kind": "model",
+      "license": "Apache-2.0",
+      "tier": "verify",
+      "source": "https://github.com/bytedance/LatentSync",
+      "recommendedFor": [
+        "lip-sync"
+      ],
+      "localStatus": "not-installed",
+      "notes": "只用于自有角色。"
+    },
+    {
+      "id": "liveportrait",
+      "name": "LivePortrait",
+      "category": "promo-video",
+      "kind": "model",
+      "license": "MIT code; InsightFace models non-commercial",
+      "tier": "restricted",
+      "source": "https://github.com/KlingAIResearch/LivePortrait",
+      "recommendedFor": [
+        "portrait-animation"
+      ],
+      "localStatus": "not-installed",
+      "notes": "商用前替换 InsightFace 检测模型。"
+    },
+    {
+      "id": "videolingo",
+      "name": "VideoLingo",
+      "category": "promo-video",
+      "kind": "app",
+      "license": "Apache-2.0",
+      "tier": "verify",
+      "source": "https://github.com/Huanshere/VideoLingo",
+      "recommendedFor": [
+        "subtitle-translation",
+        "dubbing"
+      ],
+      "localStatus": "not-installed",
+      "notes": "出海版本。"
+    },
+    {
+      "id": "whisper-cpp",
+      "name": "whisper.cpp",
+      "category": "promo-video",
+      "kind": "cli",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/ggml-org/whisper.cpp",
+      "recommendedFor": [
+        "transcription",
+        "srt"
+      ],
+      "localStatus": "not-installed",
+      "notes": "brew install whisper-cpp。"
+    },
+    {
+      "id": "moneyprinterturbo",
+      "name": "MoneyPrinterTurbo",
+      "category": "promo-video",
+      "kind": "app",
+      "license": "MIT",
+      "tier": "verify",
+      "source": "https://github.com/harry0703/MoneyPrinterTurbo",
+      "recommendedFor": [
+        "reference-only"
+      ],
+      "localStatus": "not-installed",
+      "notes": "默认图库素材不符合 TapTap 实机要求，只借鉴编排。"
+    },
+    {
+      "id": "narratoai",
+      "name": "NarratoAI",
+      "category": "promo-video",
+      "kind": "app",
+      "license": "MIT",
+      "tier": "verify",
+      "source": "https://github.com/linyqh/NarratoAI",
+      "recommendedFor": [
+        "commentary-edit"
+      ],
+      "localStatus": "not-installed",
+      "notes": "解说剪辑参考。"
+    },
+    {
+      "id": "social-auto-upload",
+      "name": "social-auto-upload（sau）",
+      "category": "distribution",
+      "kind": "cli",
+      "license": "See repository",
+      "tier": "verify",
+      "source": "https://github.com/dreammis/social-auto-upload",
+      "recommendedFor": [
+        "douyin",
+        "bilibili",
+        "xiaohongshu",
+        "kuaishou",
+        "channels"
+      ],
+      "localStatus": "not-installed",
+      "notes": "Cookie 仅本地；浏览器自动化有账号风险。"
+    },
+    {
+      "id": "edge-tts",
+      "name": "edge-tts",
+      "category": "promo-video",
+      "kind": "cli",
+      "license": "GPL-3.0 family client; unofficial Microsoft service",
+      "tier": "restricted",
+      "source": "https://github.com/rany2/edge-tts",
+      "recommendedFor": [
+        "none"
+      ],
+      "localStatus": "not-installed",
+      "notes": "无商用授权。"
+    }
+  ]
+}

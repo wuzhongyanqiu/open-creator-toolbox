@@ -31,6 +31,8 @@
 
 游戏资产的详细选型、许可证边界和五款游戏落地顺序见 [游戏资产工具链](docs/GAME_ASSET_PIPELINE.md)，机器可读目录见 [game-asset-catalog.json](docs/game-asset-catalog.json)。
 
+面向 Agent 的游戏制作工具箱（MCP/Skill、运行时库、AI 资产与音频路由、本机现状）见 [游戏制作 Agent 工具箱](docs/GAME_DEV_TOOLKIT.md)；宣发视频（TapTap 实机录屏、宣传片、搞笑/抽象短视频、分发）见 [游戏宣发视频工作流](docs/GAME_PROMO_VIDEO_PIPELINE.md)，配套脚本在 `scripts/promo/`，机器可读目录为 [game-toolkit-catalog.json](docs/game-toolkit-catalog.json)。
+
 VoiceStudio 的五款游戏配音分工、授权边界和本地 MCP 接入见 [VoiceStudio 游戏配音流水线](docs/VOICE_STUDIO_GAME_PIPELINE.md)。
 
 ## 本地开发
