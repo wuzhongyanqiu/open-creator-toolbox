@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "reviewedAt": "2026-10-16",
+  "reviewedAt": "2026-10-18",
   "tiers": {
     "clear": "工具或资产许可明确，可进入商业制作；仍需保留许可文本和来源快照。",
     "verify": "工具本身可用，但模型、插件、社区资产、采样或署名义务必须逐项核对。",
@@ -764,6 +764,37 @@
       ],
       "localStatus": "not-installed",
       "notes": "无商用授权。"
+    },
+    {
+      "id": "sri-image25",
+      "name": "SRI Image 2.5（Sunburst / Flare）",
+      "kind": "image-service",
+      "license": "Commercial service; verify service and output terms",
+      "tier": "verify",
+      "source": "https://sri-ai.xyz",
+      "recommendedFor": [
+        "character-art",
+        "environment-art",
+        "ui-art",
+        "reference-edits"
+      ],
+      "notes": "用户指定工作区默认。2026-10-18 实测 /v1/models 包含 gpt-image-2.5-sunburst、gpt-image-2.5-flare；正式资产默认前者、草稿可用后者。凭据只在本地从 ~/.codex/auth.json 读取，不输出；具体参数与生成能力需实测。",
+      "category": "asset-generation"
+    },
+    {
+      "id": "tripo-cloud",
+      "name": "Tripo 云端 3D 生成",
+      "kind": "3d-service",
+      "license": "Commercial service; verify plan and output terms",
+      "tier": "verify",
+      "source": "https://developers.tripo3d.ai/en/docs/quick-start",
+      "recommendedFor": [
+        "character-blockout",
+        "environment-blockout",
+        "image-to-3d"
+      ],
+      "notes": "独立账号、额度与 TRIPO_API_KEY；此次未验证连接。与 MIT TripoSR 不同；输出回 Blender 清理、减面、UV、材质、绑定与导出。",
+      "category": "asset-generation"
     }
   ]
 }

@@ -1,19 +1,21 @@
 # 五款游戏共用资产工具链
 
-更新日期：2026-10-13
+更新日期：2026-10-18
 
 这份清单服务于当前五款 TapTap H5 游戏，也作为后续新游戏的默认资产基线。它区分工具软件许可、模型权重许可、下载素材许可和参考声音授权；四者不能互相替代。
 
 ## 结论
 
+所有 Agent 的生成、建模、审图步骤及凭据入口见 [GAME_VISUAL_ASSET_WORKFLOW.md](GAME_VISUAL_ASSET_WORKFLOW.md)。生图已统一为用户指定的 SRI Image 2.5；下文各游戏历史落地建议中的本地生成工具仅作备选，不覆盖此默认。
+
 默认采用以下主链：
 
 | 资产 | 默认工具链 | 发布格式 | 默认许可策略 |
 | --- | --- | --- | --- |
-| 角色立绘与 CG | Krita + ComfyUI/Invoke + FLUX.1 Schnell | WebP/PNG | 自绘或 Apache-2.0 权重；保存提示词、模型哈希和人工修改记录 |
+| 角色立绘、背景与 CG | SRI Image 2.5（默认 Sunburst）+ Krita 修整 | WebP/PNG | 保存提示词、模型 ID、参考图权利与修改记录；生成服务及输出条款逐项核对 |
 | 像素画 | Pixelorama，LibreSprite 作为备选 | PNG 精灵表 + JSON | 自制；外部素材优先 CC0 |
-| 3D 角色 | MakeHuman 官方核心资产 + Blender | GLB | MakeHuman 核心资产 CC0；社区扩展逐件核对 |
-| 3D 场景与道具 | Blender + Poly Haven/ambientCG/Kenney | GLB + WebP/KTX2 | 优先 CC0；生成式草模必须人工重拓扑 |
+| 3D 角色 | Blender；Tripo / TripoSR 可辅助草模 | GLB / 离线精灵帧 | Tripo 云服务单独核对套餐与输出授权；TripoSR 为 MIT，两者不混用 |
+| 3D 场景与道具 | Blender + Poly Haven/ambientCG/Kenney；Tripo 可辅助草模 | GLB + WebP/KTX2 | 优先 CC0；生成式草模必须人工重拓扑 |
 | 配音 | VoiceStudio 编排 OpenVoice/CosyVoice/GPT-SoVITS + Audacity | OGG/AAC/WAV 源档 | VoiceStudio 只作本地制作工作台；逐项记录引擎、模型和参考音频授权 |
 | 剧情文案 | Inky/ink + inkjs + Vale | `.ink` 源文件 + JSON | 剧情与程序状态分离；专名、标点和 UI 字数进入自动检查 |
 | BGM | MuseScore/LMMS + Ardour/Audacity | OGG 循环 + WAV 母版 | 自行作曲；采样、SoundFont、插件逐项核对 |

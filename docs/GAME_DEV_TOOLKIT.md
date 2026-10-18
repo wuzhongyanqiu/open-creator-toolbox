@@ -1,8 +1,10 @@
 # 游戏制作 Agent 工具箱
 
-更新日期：2026-10-16
+更新日期：2026-10-18
 
 这份文档写给在工作区里做游戏、改游戏的 Agent。很多"做不好"其实是因为没找到合适的工具，所以这里按"我现在要解决什么问题"来查。资产许可的细节（clear / verify / restricted 三档）以 [GAME_ASSET_PIPELINE.md](GAME_ASSET_PIPELINE.md) 为准，宣发视频见 [GAME_PROMO_VIDEO_PIPELINE.md](GAME_PROMO_VIDEO_PIPELINE.md)，机器可读目录见 [game-toolkit-catalog.json](game-toolkit-catalog.json)。
+
+所有 Agent 先读 [全工作区视觉资产工作流](GAME_VISUAL_ASSET_WORKFLOW.md)：生图统一使用 SRI Image 2.5（正式资产默认 Sunburst、草稿可用 Flare），建模以 Blender 为主，可选 Tripo 草模；审图使用视觉模型与实机截图。该规范优先于旧脚本默认值和下文历史建议。
 
 ## 0. 先查这张表
 
@@ -10,9 +12,9 @@
 | --- | --- | --- |
 | 截图、录屏、自动试玩、验收 | Playwright（各游戏 devDeps 已装）+ Playwright MCP | `game-pipeline` skill 里有存档注入、拖线战斗、字号验收脚本 |
 | 给录屏补上游戏声音 | `scripts/promo/webaudio-tap.js` | Playwright `recordVideo` **不录音**，现有商店视频全部是静音轨 |
-| 生成 2D 立绘、背景、UI 图 | 各仓库 `scripts/gen-images.mjs`（SRI 中转 gpt-image） | 参考图一致性走 `/v1/images/edits`；见 `game-pipeline` §1 |
+| 生成 2D 立绘、背景、UI 图 | SRI Image 2.5：`gpt-image-2.5-sunburst` / `gpt-image-2.5-flare`（各仓库脚本显式 `--model`） | 参考图一致性走 `/v1/images/edits`；见 `game-pipeline` §1 |
 | 像素精灵、行走帧、图块 | PixelLab MCP / Retro Diffusion API（付费） | 本地手工：Pixelorama / LibreSprite |
-| 3D 道具、场景、低模 | Blender CLI（本机已装）+ mcp-for-blender | 生成草模：TRELLIS.2（MIT）> Meshy 付费 > Hunyuan3D（有地域/MAU 限制） |
+| 3D 道具、场景、低模 | Blender CLI（本机已装）+ mcp-for-blender | 草模可用 Tripo（独立 API Key 与许可核对）或 TripoSR/TRELLIS.2；随后回 Blender 清理、优化 |
 | 游戏内音效（零素材） | ZzFX / jsfxr | 素材库：Sonniss GDC 包、Freesound CC0、Kenney |
 | BGM | ACE-Step（Apache-2.0，本地） | MuseScore/LMMS 自作；MusicGen 权重非商用，禁止进包 |
 | 配音 | VoiceStudio 编排 CosyVoice / GPT-SoVITS | IndexTTS2、Fish Speech 有商用门槛，见 §5 |
@@ -24,13 +26,13 @@
 | 性能排查 | Chrome DevTools Performance、Spector.js、stats.js / r3f-perf | 真机在 TapTap Android WebView 上测 |
 | 逆向参考开源同类 | `rea/`（REA + Ghidra，已跑通） | 结论需人工复核，见 KANBAN 里的误报记录 |
 
-## 1. 本机现状（2026-10-16 实测）
+## 1. 本机现状（未单独注明的条目沿用 2026-10-16 实测）
 
 | 工具 | 状态 | 备注 |
 | --- | --- | --- |
 | ffmpeg 8.1（Homebrew） | 已装 | 有 libx264/x265/vpx/opus/svtav1、`zoompan`、`xfade`、`loudnorm`；**没有 drawtext、subtitles/ass**（缺 libfreetype/libass）。字幕用 `scripts/promo/caption-card.py` 渲染成 PNG 再 overlay；要原生字幕可装 keg-only 的 `ffmpeg-full` |
 | cwebp | 已装 | 资产压缩统一用 Pillow（`compress-art.py`） |
-| Blender | 已装（`/opt/homebrew/bin/blender`） | 可以 `blender -b -P script.py` 做程序化渲染 |
+| Blender | 已装（`/opt/homebrew/bin/blender`，2026-10-18 实测 5.2.2 LTS） | 可以 `blender -b -P script.py` 做程序化渲染 |
 | Python 3.13 + Pillow 12.2、uv、bun、node、docker | 已装 | |
 | Google Chrome + Playwright | 已装 | 各游戏仓库 `node_modules/@playwright/test` |
 | OpenMontage | 已安装 | Remotion、HyperFrames、Piper TTS 都在；`.agents/skills/` 下有 90 个可直接读的 skill |
@@ -76,10 +78,10 @@
 
 | 资产 | 首选 | 许可要点 |
 | --- | --- | --- |
-| 立绘、CG、背景、UI | SRI gpt-image（`gen-images.mjs`）+ 人工 paint-over | 提示词写回 `docs/ART_PROMPTS.jsonl`；对外发布要按《人工智能生成合成内容标识办法》声明 |
+| 立绘、CG、背景、UI | SRI Image 2.5（默认 `gpt-image-2.5-sunburst`）+ 人工修整 | 提示词写回 `docs/ART_PROMPTS.jsonl`；对外发布要按《人工智能生成合成内容标识办法》声明 |
 | 像素精灵 / 动画帧 | PixelLab、Retro Diffusion | 付费产物归用户；不能拿去训练模型 |
 | 3D 草模 | TRELLIS.2（MIT）→ Blender 重拓扑 | 生成结果必须人工清理拓扑和 UV |
-| 3D 草模（云端） | Meshy 付费版 | 免费版产物是 CC BY 4.0，必须署名 Meshy；Tripo 免费版条款不一致，只用付费版 |
+| 3D 草模（云端） | Tripo；Meshy 为备选 | Tripo 使用独立 `TRIPO_API_KEY`，账号/额度/许可使用前核对；不能把 TripoSR 的 MIT 套到云服务。见视觉资产工作流 |
 | 3D 草模（本地大模型） | Hunyuan3D 2.1 | 腾讯社区许可：**不适用于欧盟、英国、韩国**，月活超 100 万要单独申请，分发需附 Notice → `verify` |
 | 程序化渲染 | Blender CLI | 星契回廊、叠塔已有 `build-*-asset.sh` 先例 |
 
