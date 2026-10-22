@@ -4,6 +4,8 @@
 
 游戏做好后，用这份文档出宣发视频：TapTap 实机录屏、宣传片，以及抖音 / B 站 / 小红书上的搞笑、抽象短视频。所有命令都在本机实测过（ffmpeg 8.1，没有 drawtext/libass）。工具许可沿用 [GAME_ASSET_PIPELINE.md](GAME_ASSET_PIPELINE.md) 的 clear / verify / restricted 三档。
 
+**统一宣发要求（2026-10-23）**：所有游戏宣发必须添加相关 tag / 话题标签，并在发布后核对实际显示；具体规则见 [游戏宣发与话题标签规范](GAME_PROMOTION_GUIDELINES.md)。AI 声明、论坛分类不代替 tag。
+
 ## 0. 先修一个现有问题：商店视频都没有声音
 
 2026-10-16 用 `ebur128` 测了全部 15 个商店 / 营销视频（`*/docs/store-assets/video/*.mp4`、`*/docs/store-assets/marketing/*.mp4`），积分响度都是 **-70 LUFS**，也就是带着一条静音 AAC 轨。原因是 Playwright 的 `recordVideo` 只录画面，不录声音。
