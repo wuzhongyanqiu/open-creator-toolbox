@@ -19,6 +19,12 @@ struct DesktopTool {
 
 const TOOLS: &[DesktopTool] = &[
     DesktopTool {
+        id: "xcode",
+        mac_apps: &["Xcode.app"],
+        commands: &[],
+        windows_paths: &[],
+    },
+    DesktopTool {
         id: "android-studio",
         mac_apps: &["Android Studio.app"],
         commands: &["studio", "android-studio"],

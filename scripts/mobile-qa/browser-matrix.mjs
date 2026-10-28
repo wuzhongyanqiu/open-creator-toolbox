@@ -17,6 +17,7 @@ const PROFILES = [
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const UNVERIFIED = [
   'Physical device hardware, vendor OS differences, thermal throttling and real device performance.',
+  'Desktop WebKit mobile emulation is not an iOS Simulator, physical iPhone, exact shipping Safari version or iOS TapTap host.',
   'TapTap Android client/WebView, real rewarded ads and server-side leaderboard correctness.',
   'Human review of visual clarity, canvas controls, overlap and whether interactions make sense.',
   'Release package/source identity, latest store artwork, published version and update-post topics.',
@@ -30,6 +31,8 @@ Usage:
 
 Options:
   --project PATH       Resolve an existing playwright or @playwright/test from this project.
+  --engine ENGINE      chromium or webkit (default chromium). Uses this project's already-installed browser.
+                       WebKit is desktop-engine mobile emulation, not native iOS / exact Safari / TapTap.
   --url URL            HTTP(S) loopback URL; remote URLs/requests require --allow-remote.
   --out PATH           New or empty output directory. Evidence is runtime data, not source.
   --scenario PATH      Absolute local .mjs module exporting a default async function.
@@ -38,9 +41,9 @@ Options:
                        At least one check and covered item are required. Throwing fails the profile.
   --profiles [NAMES]   Print profiles, or select comma-separated profile names.
   --allow-remote       Explicitly allow external HTTP(S)/WebSocket requests. May contact production.
-  --headed             Show a fresh Chromium window (never reuses a logged-in user browser).
+  --headed             Show a fresh browser window (never reuses a logged-in user browser).
   --channel chrome     Use already-installed system Google Chrome with this project's Playwright.
-                       Only chrome is accepted; omitted = the original bundled Chromium default.
+                       Chromium engine only. Only chrome is accepted; omitted = the selected bundled engine.
                        No browser is installed and no fallback occurs. The report records the channel.
   --timeout-ms N       Per-action/navigation timeout (default 20000, max 120000).
                        Also bounds layout diagnostics; cleanup uses 1000–5000ms.
@@ -56,10 +59,10 @@ SCENARIO_PASS only covers the project-defined checks actually returned by the sc
 `;
 
 function parseArgs(args) {
-  const options = { timeoutMs: 20000, scenarioTimeoutMs: 120000, settleMs: 1500, allowRemote: false, headed: false };
+  const options = { engine: 'chromium', timeoutMs: 20000, scenarioTimeoutMs: 120000, settleMs: 1500, allowRemote: false, headed: false };
   const values = new Map([
     ['--project', 'project'], ['--url', 'url'], ['--out', 'out'], ['--scenario', 'scenario'],
-    ['--channel', 'channel'],
+    ['--channel', 'channel'], ['--engine', 'engine'],
     ['--timeout-ms', 'timeoutMs'], ['--scenario-timeout-ms', 'scenarioTimeoutMs'], ['--settle-ms', 'settleMs'], ['--version-label', 'versionLabel'],
   ]);
   for (let i = 0; i < args.length; i++) {
@@ -86,6 +89,12 @@ function parseArgs(args) {
   }
   if (options.channel !== undefined && options.channel !== 'chrome') {
     throw new Error('--channel only accepts chrome for an already-installed system Google Chrome; omit it for bundled Chromium.');
+  }
+  if (!['chromium', 'webkit'].includes(options.engine)) {
+    throw new Error('--engine only accepts chromium or webkit. No browser will be installed or substituted.');
+  }
+  if (options.channel && options.engine !== 'chromium') {
+    throw new Error('--channel chrome requires --engine chromium; it cannot select Safari or a WebKit runtime.');
   }
   return options;
 }
@@ -151,21 +160,23 @@ async function sourceInfo(project) {
   };
 }
 
-async function loadPlaywright(project) {
+async function loadPlaywright(project, engine) {
   const requireFromProject = createRequire(path.join(project, 'package.json'));
   const errors = [];
   for (const specifier of ['playwright', '@playwright/test']) {
     try {
       const modulePath = requireFromProject.resolve(specifier);
       const imported = await import(pathToFileURL(modulePath).href);
-      const api = imported.chromium ? imported : imported.default;
-      if (!api?.chromium) throw new Error('The resolved module does not export chromium.');
+      const api = imported[engine] ? imported : imported.default;
+      if (typeof api?.[engine]?.launchServer !== 'function' || typeof api?.[engine]?.connect !== 'function') {
+        throw new Error(`The resolved module does not export a usable ${engine} browser type.`);
+      }
       let version = null;
       try { version = requireFromProject(`${specifier}/package.json`).version; } catch { /* optional */ }
       return { api, dependency: { specifier, modulePath, version } };
     } catch (error) { errors.push(`${specifier}: ${error.code ?? error.message}`); }
   }
-  throw new Error(`No usable Playwright in --project. This runner does not install dependencies. Restore that game's lockfile dependencies, then install its matching Chromium with its local Playwright CLI. Resolution: ${errors.join('; ')}`);
+  throw new Error(`No usable Playwright ${engine} API in --project. This runner does not install dependencies or browsers. Restore that game's lockfile dependencies and verify its existing matching ${engine} runtime with its local Playwright CLI. Resolution: ${errors.join('; ')}`);
 }
 
 async function prepareOutput(outputDir) {
@@ -280,7 +291,7 @@ function validateScenarioResult(value) {
 async function runProfile(browser, profile, options, scenario) {
   const outputDir = path.join(options.out, profile.name);
   await mkdir(outputDir, { mode: 0o700 });
-  const result = { profile, evidenceType: 'BROWSER_EMULATION', status: 'FAIL', failures: [], warnings: [], scenario: null,
+  const result = { profile, evidenceType: 'BROWSER_EMULATION', engine: options.engine, status: 'FAIL', failures: [], warnings: [], scenario: null,
     screenshots: [], eventsFile: `${profile.name}/events.json`, diagnosticsFile: `${profile.name}/diagnostics.json` };
   const events = { console: [], pageErrors: [], failedRequests: [], httpErrors: [], blockedRequests: [], counts: {}, dropped: {} };
   const { name: _name, ...contextOptions } = profile;
@@ -392,39 +403,43 @@ async function main() {
   await prepareOutput(options.out);
   const report = {
     schemaVersion: 1, startedAt: new Date().toISOString(), finishedAt: null, status: 'ERROR',
-    evidenceType: 'BROWSER_EMULATION', releaseGate: 'NOT_EVALUATED',
+    evidenceType: 'BROWSER_EMULATION', engine: options.engine, releaseGate: 'NOT_EVALUATED',
+    environment: options.engine === 'webkit'
+      ? 'Desktop Playwright WebKit with mobile viewport/touch/DPR emulation; not iOS Simulator, exact Safari or iOS TapTap.'
+      : 'Desktop Chromium with mobile viewport/touch/DPR emulation; not physical Android or TapTap host.',
     targetUrl: safeUrl(options.url), networkPolicy: options.allowRemote ? 'REMOTE_EXPLICITLY_ALLOWED' : 'LOOPBACK_ONLY_HTTP_AND_SUPPORTED_WEBSOCKETS',
     source: await sourceInfo(options.project), expectedVersionLabel: options.versionLabel ?? null,
     runner: { path: SCRIPT_PATH, sha256: createHash('sha256').update(await readFile(SCRIPT_PATH)).digest('hex'), nodeVersion: process.version,
-      requestedChannel: options.channel ?? 'chromium' },
+      requestedEngine: options.engine, requestedChannel: options.channel ?? null },
     scenario: scenarioIdentity, coverageScope: scenario ? 'Only returned project scenario checks plus browser smoke diagnostics.' : 'Navigation, runtime/network errors, DOM diagnostics and screenshots only. No gameplay assertions.',
     unverified: [...UNVERIFIED, ...(!scenario ? ['All functional gameplay paths: no project scenario supplied.'] : [])],
     profiles: [],
   };
   try {
-    const { api, dependency } = await loadPlaywright(options.project);
+    const { api, dependency } = await loadPlaywright(options.project, options.engine);
+    const browserType = api[options.engine];
     report.playwright = dependency;
     for (const profile of profiles) {
       let browser;
       let server;
       let result;
       try {
-        try { server = await api.chromium.launchServer({ headless: !options.headed, host: '127.0.0.1', timeout: options.timeoutMs,
+        try { server = await browserType.launchServer({ headless: !options.headed, host: '127.0.0.1', timeout: options.timeoutMs,
           ...(options.channel ? { channel: options.channel } : {}) }); }
         catch (error) {
           const hint = options.channel === 'chrome'
             ? 'System Google Chrome launch failed. Verify that system Chrome is already installed and compatible with this project\'s Playwright. No browser was installed and no bundled Chromium fallback was attempted.'
-            : 'Chromium launch failed. Install the matching browser using the game\'s existing local Playwright CLI (for example: node node_modules/playwright/cli.js install chromium, from --project), and verify OS requirements. No browser was installed by this runner.';
+            : `The project's existing ${options.engine} runtime could not launch. Verify that its matching runtime and OS requirements are already available with the project's local Playwright CLI. No browser was downloaded, installed or substituted by this runner.`;
           const launchError = new Error(`${hint} ${cleanText(error.message)}`);
           launchError.configurationFailure = true;
           throw launchError;
         }
-        try { browser = await api.chromium.connect(server.wsEndpoint(), { timeout: options.timeoutMs }); }
+        try { browser = await browserType.connect(server.wsEndpoint(), { timeout: options.timeoutMs }); }
         catch { throw new Error('Could not connect to this runner\'s new loopback-only browser within the action timeout.'); }
-        report.browser = { engine: 'chromium', channel: options.channel ?? 'chromium', version: browser.version(), freshBrowserPerProfile: true, freshContextPerProfile: true, emulatedBrand: null };
+        report.browser = { engine: options.engine, channel: options.channel ?? options.engine, version: browser.version(), freshBrowserPerProfile: true, freshContextPerProfile: true, emulatedBrand: null };
         result = await runProfile(browser, profile, options, scenario);
       } catch (error) {
-        result = { profile, evidenceType: 'BROWSER_EMULATION', status: 'FAIL', configurationFailure: error.configurationFailure === true, failures: [cleanText(error.stack ?? error.message)], warnings: [], scenario: null, screenshots: [] };
+        result = { profile, evidenceType: 'BROWSER_EMULATION', engine: options.engine, status: 'FAIL', configurationFailure: error.configurationFailure === true, failures: [cleanText(error.stack ?? error.message)], warnings: [], scenario: null, screenshots: [] };
       } finally {
         const cleanupFailures = await closeOwnedBrowser(browser, server, options.cleanupTimeoutMs);
         if (cleanupFailures.length) {

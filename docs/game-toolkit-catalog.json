@@ -812,7 +812,7 @@
       ],
       "localStatus": "installed",
       "reviewedAt": "2026-10-28",
-      "notes": "五种屏幕配置，借用目标游戏已锁定的Playwright；无场景仅SMOKE_PASS，有场景仅覆盖实际检查；releaseGate始终NOT_EVALUATED。默认阻止外部请求，证据写忽略目录。"
+      "notes": "五种屏幕配置，--engine chromium|webkit借用目标游戏已锁定的Playwright；本机两引擎均已装。无场景仅SMOKE_PASS，有场景仅覆盖实际检查，releaseGate始终NOT_EVALUATED；WebKit不等于iOS原生宿主。默认阻止外部请求，证据写忽略目录。"
     },
     {
       "id": "android-emulator",
@@ -858,11 +858,13 @@
       "source": "https://developer.apple.com/documentation/xcode/running-your-app-on-simulated-or-physical-devices",
       "recommendedFor": [
         "safari-layout",
-        "ios-simulator-build"
+        "ios-simulator-build",
+        "managed-simctl",
+        "safari-webkit-testing"
       ],
       "localStatus": "not-installed",
       "reviewedAt": "2026-10-28",
-      "notes": "只在macOS上运行；第三方App Store真机包不等于Simulator构建，不能承诺安装iOS TapTap。"
+      "notes": "2026-10-28用户取消Xcode下载，本机仅CLT，无完整Xcode/simctl/runtime；qa:ios入口及27项单测已完成，但未启动iOS模拟器。iOS原生检查标SKIPPED_BY_USER，替代使用本机已装Playwright WebKit做H5兼容，不能冒充TapTap iOS宿主。"
     },
     {
       "id": "android-device-streaming",
@@ -897,6 +899,40 @@
       "localStatus": "not-installed",
       "reviewedAt": "2026-10-28",
       "notes": "App Live才支持App安装；Live是网站测试。需要账号、适用套餐和安装/登录权限，本次未开通。"
+    },
+    {
+      "id": "save-upgrade-regression",
+      "name": "同来源存档跨版本升级回归（本仓库）",
+      "category": "device-testing",
+      "kind": "regression-script",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/wuzhongyanqiu/open-creator-toolbox",
+      "recommendedFor": [
+        "save-migration",
+        "upgrade-compatibility",
+        "migration-idempotency"
+      ],
+      "localStatus": "installed",
+      "reviewedAt": "2026-10-28",
+      "notes": "qa:save按--engine chromium|webkit在同context同origin执行旧构建写档、候选升级、两次刷新，断言进度/资源/解锁/纪录及每声明storage。只保存指纹，不存明文。未接具体历史fixture或原生/云端时不得声称全部存档已迁移。"
+    },
+    {
+      "id": "playwright-webkit",
+      "name": "Playwright WebKit（已有本机引擎）",
+      "category": "device-testing",
+      "kind": "browser-engine",
+      "license": "Apache-2.0 / WebKit component licenses",
+      "tier": "verify",
+      "source": "https://playwright.dev/docs/browsers#webkit",
+      "recommendedFor": [
+        "webkit-h5-compatibility",
+        "mobile-layout",
+        "save-upgrade-regression"
+      ],
+      "localStatus": "installed",
+      "reviewedAt": "2026-10-28",
+      "notes": "用户取消Xcode下载后采用已有WebKit2359；qa:browser和qa:save支持--engine webkit。五配置流程回归和两引擎存档回归已执行；不等于iOS模拟器、精确Safari版本、物理iPhone或TapTap iOS宿主验收。"
     }
   ]
 }

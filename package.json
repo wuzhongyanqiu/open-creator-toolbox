@@ -12,8 +12,10 @@
     "catalog:check": "node scripts/validate-catalog.mjs",
     "voice:check": "node scripts/check-voicestudio.mjs",
     "qa:android": "python3 scripts/mobile-qa/android-device.py",
+    "qa:ios": "python3 scripts/mobile-qa/ios-device.py",
     "qa:browser": "node scripts/mobile-qa/browser-matrix.mjs",
-    "qa:check": "python3 -m unittest discover -s scripts/mobile-qa -p 'test_*.py' && node --check scripts/mobile-qa/browser-matrix.mjs && node --check scripts/mobile-qa/example-scenario.mjs",
+    "qa:save": "node scripts/mobile-qa/save-upgrade.mjs",
+    "qa:check": "python3 -m unittest discover -s scripts/mobile-qa -p 'test_*.py' && node --check scripts/mobile-qa/browser-matrix.mjs && node --check scripts/mobile-qa/example-scenario.mjs && node --test scripts/mobile-qa/test-save-upgrade.mjs",
     "preview": "vite preview",
     "tauri": "tauri"
   },

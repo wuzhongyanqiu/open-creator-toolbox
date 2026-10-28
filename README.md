@@ -12,7 +12,7 @@
 - 一键启动已安装应用，或打开官方下载页面
 - 展示使用开放格式连接工具的推荐工作流
 - 覆盖像素画、3D 建模、角色配音、CG、BGM、音效与实机视频
-- 提供移动游戏浏览器矩阵、Android Emulator/ADB 测试脚本与云真机入口
+- 提供移动游戏浏览器矩阵、Android/iOS 模拟器管理、旧存档升级回归与云真机入口
 - 将资源分为可直接商用、需要逐项核对、禁止进入商业成品三档
 - 支持 macOS、Windows 和 Linux
 
@@ -29,7 +29,7 @@
 | 剧情与文案 | Inky/ink、Vale |
 | 开放素材 | Kenney、Poly Haven、ambientCG、OpenGameArt、Freesound |
 | PDF | Stirling PDF |
-| 移动设备测试 | Android Studio / Emulator、Android Device Streaming / DDP、BrowserStack App Live |
+| 移动设备测试 | Android Emulator、Playwright WebKit、可选Xcode / iOS Simulator、Android Device Streaming / DDP、BrowserStack App Live |
 
 游戏资产的详细选型、许可证边界和五款游戏落地顺序见 [游戏资产工具链](docs/GAME_ASSET_PIPELINE.md)，机器可读目录见 [game-asset-catalog.json](docs/game-asset-catalog.json)。
 
@@ -38,6 +38,10 @@
 所有游戏图文和视频宣发都必须添加相关 tag / 话题标签；发布与验收步骤见 [游戏宣发与话题标签规范](docs/GAME_PROMOTION_GUIDELINES.md)。
 
 多屏幕触控、Android TapTap 宿主与云真机的使用、证据和边界见 [移动游戏设备测试](docs/GAME_MOBILE_TESTING.md)。`npm run qa:android -- doctor` 检查本机 Android 测试环境；`npm run qa:browser -- --help` 查看五配置浏览器验收入口。浏览器和虚拟设备结果均有独立标记，不能冒充物理真机验收。
+
+每次更新必须保留老玩家进度并平滑迁移，见 [存档兼容发布规范](docs/GAME_SAVE_COMPATIBILITY.md)。`npm run qa:save -- --help` 提供同origin旧版→候选升级与重复启动回归；`npm run qa:ios -- doctor` 核对完整Xcode和iOS runtime，设备操作仅限显式登记的专属Simulator。
+
+当前无需下载Xcode：本机已装的WebKit可通过 `qa:browser` 和 `qa:save` 加 `--engine webkit` 做H5兼容回归。iOS原生模拟器/宿主测试按用户要求跳过，不能把WebKit通过写成iPhone或TapTap iOS通过。
 
 VoiceStudio 的五款游戏配音分工、授权边界和本地 MCP 接入见 [VoiceStudio 游戏配音流水线](docs/VOICE_STUDIO_GAME_PIPELINE.md)。
 

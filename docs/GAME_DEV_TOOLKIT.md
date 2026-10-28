@@ -6,6 +6,8 @@
 
 所有 Agent 先读 [全工作区视觉资产工作流](GAME_VISUAL_ASSET_WORKFLOW.md)：生图统一使用 SRI Image 2.5（正式资产默认 Sunburst、草稿可用 Flare），建模以 Blender 为主，可选 Tripo 草模；审图使用视觉模型与实机截图。该规范优先于旧脚本默认值和下文历史建议。
 
+**每次更新必须保留老玩家存档并平滑迁移。** 开发和发布前阅读 [存档兼容规范](GAME_SAVE_COMPATIBILITY.md)，用实际上线旧版建立进度后升级候选，核对资源、解锁、任务和历史纪录；迁移失败保留原档，禁止用默认新档覆盖。存档兼容失败或未验收不放行。
+
 ## 0. 先查这张表
 
 | 我要…… | 首选 | 备选 / 说明 |
@@ -13,6 +15,9 @@
 | 截图、录屏、自动试玩、验收 | Playwright（各游戏 devDeps 已装）+ Playwright MCP | `game-pipeline` skill 里有存档注入、拖线战斗、字号验收脚本 |
 | 多屏幕、触控和页面卡住检查 | `npm run qa:browser -- --project <游戏仓库> --url <本地URL> --out <证据目录>` | 五种屏幕配置；接入项目场景后才能验证完整流程，见 [移动设备测试](GAME_MOBILE_TESTING.md) |
 | Android 系统与正式 TapTap 宿主测试 | Android Emulator ARM64 + ADB；`npm run qa:android -- doctor` | 三种通用屏幕配置；真实 SDK 请求须实际执行，模拟器不是物理机 |
+| iPhone / iPad 模拟器 | 完整 Xcode + iOS runtime；`npm run qa:ios -- doctor` | Safari / WebKit、自有Simulator构建；选择本机实际支持的type/runtime，不把App Store真机TapTap包当模拟器包 |
+| 无Xcode的Safari相关H5兼容 | 已有Playwright WebKit；`qa:browser` / `qa:save` 加 `--engine webkit` | 用户已取消Xcode下载，iOS原生项按授权跳过；桌面WebKit不冒充iPhone或TapTap iOS宿主 |
+| 验证更新不丢老记录 | `npm run qa:save -- --help` | 旧构建→同origin候选→两次重载，逐项核对进度/资源/解锁/纪录；见[存档兼容规范](GAME_SAVE_COMPATIBILITY.md) |
 | 物理 Android/iOS、厂商 ROM、手机性能 | 本地手机；Android Device Streaming / DDP；BrowserStack App Live | 云服务需账号、权限和费用核对，未自动开通；iOS Simulator 不能承诺安装 App Store 的 TapTap 包 |
 | 给录屏补上游戏声音 | `scripts/promo/webaudio-tap.js` | Playwright `recordVideo` **不录音**，现有商店视频全部是静音轨 |
 | 生成 2D 立绘、背景、UI 图 | SRI Image 2.5：`gpt-image-2.5-sunburst` / `gpt-image-2.5-flare`（各仓库脚本显式 `--model`） | 参考图一致性走 `/v1/images/edits`；见 `game-pipeline` §1 |
@@ -39,6 +44,8 @@
 | Python 3.13 + Pillow 12.2、uv、bun、node、docker | 已装 | |
 | Google Chrome + Playwright | 已装 | 各游戏仓库 `node_modules/@playwright/test` |
 | Android Emulator + ADB + API35 ARM64 | 已装（2026-10-28 实测） | JDK21、官方命令行工具23.0、Emulator37.2.12、ADB37.0.1；三种专属屏幕配置均冷启动/尺寸回读通过；TapTap APK小屏游客首页通过，广告/榜单另验 |
+| Playwright WebKit | 已安装（2026-10-28 可执行路径已核对） | 目标游戏依赖中可解析WebKit2359；两引擎结果分开，不等于iOS真机 |
+| Xcode / iOS Simulator | 用户已取消安装 | 本机仅CLT/simctl缺失；qa:ios保留可选入口，iOS原生测试按授权跳过，不再等待Apple登录或自动下载 |
 | OpenMontage | 已安装 | Remotion、HyperFrames、Piper TTS 都在；`.agents/skills/` 下有 90 个可直接读的 skill |
 | Toonflow | 已安装 | 分镜工作台，`yarn start` 后访问 `127.0.0.1:10588` |
 | VoiceStudio | 未常驻 | 默认端口 `127.0.0.1:3900`，用前先启动 |

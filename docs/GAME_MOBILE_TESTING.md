@@ -2,6 +2,10 @@
 
 核对日期：2026-10-28。适用于工作区 H5 游戏的日常开发、每日优化与发布验收。
 
+用户最新决定：**不下载Xcode，不继续安装iOS runtime。** 本机已装的Playwright WebKit用于H5兼容、触控布局和存档回归；iOS原生Simulator/TapTap宿主项标记 `SKIPPED_BY_USER`，不再因缺Xcode阻塞本轮Android/H5流程。该豁免仅针对iOS原生项，不降低存档、Android、真实平台服务和素材的其余发布要求，也不能宣称iOS宿主已通过。
+
+每次更新均强制执行 [老玩家存档兼容与平滑迁移](GAME_SAVE_COMPATIBILITY.md)：旧版写档后升级最终候选，逐字段核对并重复启动；迁移失败保留原始档。新安装正常、同版本刷新正常都不能替代跨版本验收。
+
 先跑浏览器矩阵，再在 Android 虚拟设备中的正式 TapTap 客户端验证宿主与平台接口；物理手机或云真机补充厂商系统、实际 GPU、触控、音频和温升测试。模拟器能推进大量之前没有环境的检查，但测试结果必须注明环境，不能将未执行的项目标为通过。
 
 ## 能力与路由
@@ -9,6 +13,7 @@
 | 环境 | 可执行的测试 | 不能据此证明的内容 |
 | --- | --- | --- |
 | Playwright / Chrome 设备模拟 | 屏幕、DPR、触控、横竖屏、DOM 页面、项目定义的操作流程、错误和布局诊断 | Android WebView / TapTap 原生宿主、真实广告、排行榜服务、特定手机性能 |
+| Playwright WebKit（本机已装） | 第二浏览器引擎的H5、CSS、触控布局、WebAudio接口与浏览器存档兼容 | 桌面WebKit不等于具体iOS版本的Safari、iPhone硬件或TapTap iOS宿主 |
 | 官方 Android Emulator ARM64 | Android 系统与 WebView、正式 TapTap APK、前后台/返回/断网、截图与 UI 层级、实际平台接口尝试 | AVD 的屏幕和 RAM 配置不是小米/华为/OPPO 的 ROM、GPU 或散热；广告商可能限制模拟环境 |
 | Xcode iOS Simulator | Safari / WebKit、iPhone/iPad 外形、自有 Simulator 构建 | 第三方 App Store 真机包不等于 Simulator 构建；不能承诺可安装 iOS TapTap |
 | 本地物理设备 | TapTap 真机操作、实际 GPU/音频/触控、长时间运行 | 单台通过不代表所有品牌和版本 |
@@ -33,6 +38,8 @@ npm run qa:browser -- \
 ```
 
 默认五种配置：360×640、390×844、412×915、844×390 横屏、1024×768 平板，明确记录触控与 DPR。它们是浏览器配置，不是实际手机型号。输出初始/结束截图、脚本与来源 commit、错误/请求诊断、横向溢出、按钮出界/尺寸/中心遮挡及 Canvas 分辨率线索；小按钮、Canvas、视觉清晰度与交互合理性仍需结合实际画面审查。
+
+`--engine chromium` 为默认；本机已有WebKit时用 `--engine webkit` 运行同一配置/场景，不下载新依赖。两套结果分别保存，不能将Chromium结果填为WebKit通过。WebKit只作Safari相关H5兼容线索，正式的iOS系统/原生宿主仍按用户决定跳过。
 
 `--scenario` 为本地 ESM，默认导出 `async ({ page, profile, outputDir }) => ({ checks, covered, unverified })`。`checks` 必须包含实际执行的 `{ name, passed }`，`covered` 说明覆盖的真实流程。见 `scripts/mobile-qa/example-scenario.mjs`；示例是接入协议，不是任何一款游戏已完成验收。
 
@@ -108,9 +115,33 @@ Android 虚拟设备中执行的真实宿主与服务请求可以作为该环境
 - [BrowserStack App Live](https://www.browserstack.com/docs/app-live/overview/introduction)：物理 Android / iOS 的 App 测试，检查目标机型、包安装、商店可用性及账号限制，不自动购买套餐。
 - Firebase Test Lab 已在 2026-10-27 公告弃用，计划 2027-09-30 关闭；新长期流程优先 DDP。Android Device Streaming 继续支持，不能把 Test Lab 弃用误写成云真机全部关闭。见 [迁移公告](https://firebase.google.com/docs/test-lab/migrate) 与 [FAQ](https://firebase.google.com/docs/test-lab/migrate-faq)。
 
+## iOS Simulator 管理与安装
+
+`npm run qa:ios` 支持 `doctor / profiles / list / create / boot / shutdown / open-url / install-app / launch-app / capture`。需要完整Xcode和已安装的iOS runtime，单独Command Line Tools不包含simctl。工具只为子进程选择 `DEVELOPER_DIR`，不修改全局 `xcode-select`；用实际 `profiles` 列出的type/runtime ID，不凭空写一个机型或系统UUID。
+
+```sh
+npm run qa:ios -- doctor
+npm run qa:ios -- profiles
+npm run qa:ios -- create compact-phone --device-type <实际iPhone-type-ID> --runtime <实际iOS-runtime-ID>
+npm run qa:ios -- create large-phone --device-type <实际大屏iPhone-type-ID> --runtime <实际iOS-runtime-ID>
+npm run qa:ios -- create tablet --device-type <实际iPad-type-ID> --runtime <实际iOS-runtime-ID>
+npm run qa:ios -- boot --udid <create返回的UDID>
+npm run qa:ios -- open-url --udid <UDID> http://127.0.0.1:5173
+npm run qa:ios -- capture --udid <UDID>
+npm run qa:ios -- shutdown --udid <UDID>
+```
+
+设备操作只接受私有登记中且与simctl实际名称/runtime一致的专属UDID，拒绝 `booted`、用户已有模拟器和物理手机。重开同一专属设备保留存储；不delete、erase或重建来规避存档失败。登记与截图在忽略的 `output/mobile-qa/`，不能删除登记后把旧设备当不存在重新创建。
+
+Safari可验证WebKit、iOS视口与浏览器存储；自有原生包装可用 `install-app --udid <UDID> /absolute/SimulatorBuild.app`、`launch-app --udid <UDID> --bundle-id <ID>`。只接受Info.plist声明iPhoneSimulator的平台构建，IPA、真机/App Store包不是替代。Safari网页正常不能代替TapTap iOS原生宿主的广告、排行榜与存储容器验收；后者仍需可用宿主Simulator构建或物理/云iPhone。
+
+本机2026-10-28实查：macOS26.5、仅CLT，`doctor.ready=false`，尚无可启动的iOS runtime。App Store当前最新版Xcode要求macOS26.6；[苹果兼容表](https://developer.apple.com/xcode/system-requirements)列出Xcode26.6支持macOS26.2—26.x，未来可从[苹果旧版下载](https://developer.apple.com/download/all/?q=Xcode)选择兼容版本。注意这是 **Xcode26.6** 与 **macOS26.6** 两种不同版本。用户随后取消下载，本次未下载或安装Xcode，不再等待Apple登录；iOS管理脚本仅作为以后可选入口。参考[官方安装说明](https://developer.apple.com/documentation/safari-developer-tools/installing-xcode-and-simulators)和[runtime组件安装](https://developer.apple.com/documentation/xcode/downloading-and-installing-additional-xcode-components)。
+
+完成完整Xcode的官方首次初始化后，在Settings / Components下载匹配iOS runtime，再执行doctor、实际创建设备/启动/Safari/截图，分别留证。不会自动接受新许可、执行系统升级或使用非官方Xcode包绕过账号限制。当前iOS管理脚本27项单测通过，只证明隔离和参数/错误处理；缺Xcode时没有实际iOS启动验收。
+
 ## 五、发布证据与每日任务
 
-每轮记录 `browserEmulation`、`androidEmulatorHost`、`physicalDevice`、`platformAds`、`platformLeaderboard`、`visualReview`、`packageIdentity`、`storeMedia` 和 `postPublication` 分项，状态为 `PASS / FAIL / UNKNOWN / NOT_APPLICABLE`。`NOT_APPLICABLE` 必须写理由。门禁由最终发行记录汇总，任一适用的必检项失败或未知都阻止发布；工具的 `SMOKE_PASS` / `SCENARIO_PASS` 不直接改成门禁 PASS。
+每轮记录 `browserEmulation`、`webkitCompatibility`、`androidEmulatorHost`、`iosSimulator`、`saveCompatibility`、`physicalDevice`、`platformAds`、`platformLeaderboard`、`visualReview`、`packageIdentity`、`storeMedia` 和 `postPublication` 分项，状态为 `PASS / FAIL / UNKNOWN / NOT_APPLICABLE / SKIPPED_BY_USER`。后两种必须写理由和对应用户授权；当前仅iOS原生检查获得跳过授权。门禁由最终发行记录汇总，任一适用的必检项失败或未知都阻止发布；工具的 `SMOKE_PASS` / `SCENARIO_PASS` 不直接改成门禁 PASS。
 
 每日任务使用最近有效的配置，优先重现真实问题、运行项目场景与候选宿主测试。最终正式包和素材必须同版本；确认精确新包上线、线上关键路径复核通过后，按 [宣发规范](GAME_PROMOTION_GUIDELINES.md) 发布更新帖，实际关联原生话题/tag 并回查，记录链接防重复。运行数据、截图和 APK 始终不提交。
 
@@ -125,6 +156,7 @@ Android 虚拟设备中执行的真实宿主与服务请求可以作为该环境
 | TapTap宿主 | 中国官方APK包名com.taptap、版本2.96.15-rel#200100、versionCode296152001、ARM64；小屏已完成首次初始化进入游客首页，长屏安装与解析实际Launcher启动通过 |
 | 网络与隔离 | ADB5037及模拟器5554/5555监听已核对仅回环；仅专属AVD。小屏首次初始化期间尝试宿主现有代理，结束恢复原guest代理配置 |
 | 浏览器脚本 | 独立本地示例开始→操作→结果→重玩，五配置均SCENARIO_PASS；只证明runner/示例协议可用，releaseGate仍NOT_EVALUATED，不等于11款游戏验收 |
+| WebKit替代 | 使用已装WebKit2359，五配置开始→操作→结果→重玩通过；缺引擎明确失败不下载/不降级；存档工具两引擎各10项回归及鉴宝0.14.1→0.14.3选定脱敏存档保留通过；iOS原生按用户要求跳过 |
 | 卡死回归 | 本地主线程无限循环：小屏配置按1秒阶段上限记FAIL，其余四配置继续；约5.04秒以非0退出。正常五配置场景再次通过，约2.47秒；只关闭本轮独立浏览器进程 |
 | 工具箱界面 | 桌面新增“设备测试”分类和三项工具显示/筛选通过，Rust固定启动白名单覆盖Android Studio；现有桌面启动器最小宽度560px，未宣称390px移动端页面通过 |
 | 代码验证 | 33项Python单测、两份JS语法、目录校验、TypeScript/生产构建、Rust测试通过；CI加入目录与QA校验 |
