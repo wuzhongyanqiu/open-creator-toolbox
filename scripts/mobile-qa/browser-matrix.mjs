@@ -39,6 +39,9 @@ Options:
   --profiles [NAMES]   Print profiles, or select comma-separated profile names.
   --allow-remote       Explicitly allow external HTTP(S)/WebSocket requests. May contact production.
   --headed             Show a fresh Chromium window (never reuses a logged-in user browser).
+  --channel chrome     Use already-installed system Google Chrome with this project's Playwright.
+                       Only chrome is accepted; omitted = the original bundled Chromium default.
+                       No browser is installed and no fallback occurs. The report records the channel.
   --timeout-ms N       Per-action/navigation timeout (default 20000, max 120000).
                        Also bounds layout diagnostics; cleanup uses 1000–5000ms.
   --scenario-timeout-ms N Total time per scenario (default 120000, max 900000).
@@ -56,6 +59,7 @@ function parseArgs(args) {
   const options = { timeoutMs: 20000, scenarioTimeoutMs: 120000, settleMs: 1500, allowRemote: false, headed: false };
   const values = new Map([
     ['--project', 'project'], ['--url', 'url'], ['--out', 'out'], ['--scenario', 'scenario'],
+    ['--channel', 'channel'],
     ['--timeout-ms', 'timeoutMs'], ['--scenario-timeout-ms', 'scenarioTimeoutMs'], ['--settle-ms', 'settleMs'], ['--version-label', 'versionLabel'],
   ]);
   for (let i = 0; i < args.length; i++) {
@@ -79,6 +83,9 @@ function parseArgs(args) {
     if (!Number.isInteger(options[key]) || options[key] < min || options[key] > max) {
       throw new Error(`${key} must be an integer between ${min} and ${max}.`);
     }
+  }
+  if (options.channel !== undefined && options.channel !== 'chrome') {
+    throw new Error('--channel only accepts chrome for an already-installed system Google Chrome; omit it for bundled Chromium.');
   }
   return options;
 }
@@ -388,7 +395,8 @@ async function main() {
     evidenceType: 'BROWSER_EMULATION', releaseGate: 'NOT_EVALUATED',
     targetUrl: safeUrl(options.url), networkPolicy: options.allowRemote ? 'REMOTE_EXPLICITLY_ALLOWED' : 'LOOPBACK_ONLY_HTTP_AND_SUPPORTED_WEBSOCKETS',
     source: await sourceInfo(options.project), expectedVersionLabel: options.versionLabel ?? null,
-    runner: { path: SCRIPT_PATH, sha256: createHash('sha256').update(await readFile(SCRIPT_PATH)).digest('hex'), nodeVersion: process.version },
+    runner: { path: SCRIPT_PATH, sha256: createHash('sha256').update(await readFile(SCRIPT_PATH)).digest('hex'), nodeVersion: process.version,
+      requestedChannel: options.channel ?? 'chromium' },
     scenario: scenarioIdentity, coverageScope: scenario ? 'Only returned project scenario checks plus browser smoke diagnostics.' : 'Navigation, runtime/network errors, DOM diagnostics and screenshots only. No gameplay assertions.',
     unverified: [...UNVERIFIED, ...(!scenario ? ['All functional gameplay paths: no project scenario supplied.'] : [])],
     profiles: [],
@@ -401,15 +409,19 @@ async function main() {
       let server;
       let result;
       try {
-        try { server = await api.chromium.launchServer({ headless: !options.headed, host: '127.0.0.1', timeout: options.timeoutMs }); }
+        try { server = await api.chromium.launchServer({ headless: !options.headed, host: '127.0.0.1', timeout: options.timeoutMs,
+          ...(options.channel ? { channel: options.channel } : {}) }); }
         catch (error) {
-          const launchError = new Error(`Chromium launch failed. Install the matching browser using the game's existing local Playwright CLI (for example: node node_modules/playwright/cli.js install chromium, from --project), and verify OS requirements. No browser was installed by this runner. ${cleanText(error.message)}`);
+          const hint = options.channel === 'chrome'
+            ? 'System Google Chrome launch failed. Verify that system Chrome is already installed and compatible with this project\'s Playwright. No browser was installed and no bundled Chromium fallback was attempted.'
+            : 'Chromium launch failed. Install the matching browser using the game\'s existing local Playwright CLI (for example: node node_modules/playwright/cli.js install chromium, from --project), and verify OS requirements. No browser was installed by this runner.';
+          const launchError = new Error(`${hint} ${cleanText(error.message)}`);
           launchError.configurationFailure = true;
           throw launchError;
         }
         try { browser = await api.chromium.connect(server.wsEndpoint(), { timeout: options.timeoutMs }); }
         catch { throw new Error('Could not connect to this runner\'s new loopback-only browser within the action timeout.'); }
-        report.browser = { engine: 'chromium', version: browser.version(), freshBrowserPerProfile: true, freshContextPerProfile: true, emulatedBrand: null };
+        report.browser = { engine: 'chromium', channel: options.channel ?? 'chromium', version: browser.version(), freshBrowserPerProfile: true, freshContextPerProfile: true, emulatedBrand: null };
         result = await runProfile(browser, profile, options, scenario);
       } catch (error) {
         result = { profile, evidenceType: 'BROWSER_EMULATION', status: 'FAIL', configurationFailure: error.configurationFailure === true, failures: [cleanText(error.stack ?? error.message)], warnings: [], scenario: null, screenshots: [] };
