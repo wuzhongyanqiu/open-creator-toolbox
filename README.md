@@ -12,6 +12,7 @@
 - 一键启动已安装应用，或打开官方下载页面
 - 展示使用开放格式连接工具的推荐工作流
 - 覆盖像素画、3D 建模、角色配音、CG、BGM、音效与实机视频
+- 提供移动游戏浏览器矩阵、Android Emulator/ADB 测试脚本与云真机入口
 - 将资源分为可直接商用、需要逐项核对、禁止进入商业成品三档
 - 支持 macOS、Windows 和 Linux
 
@@ -28,12 +29,15 @@
 | 剧情与文案 | Inky/ink、Vale |
 | 开放素材 | Kenney、Poly Haven、ambientCG、OpenGameArt、Freesound |
 | PDF | Stirling PDF |
+| 移动设备测试 | Android Studio / Emulator、Android Device Streaming / DDP、BrowserStack App Live |
 
 游戏资产的详细选型、许可证边界和五款游戏落地顺序见 [游戏资产工具链](docs/GAME_ASSET_PIPELINE.md)，机器可读目录见 [game-asset-catalog.json](docs/game-asset-catalog.json)。
 
 面向 Agent 的游戏制作工具箱（MCP/Skill、运行时库、AI 资产与音频路由、本机现状）见 [游戏制作 Agent 工具箱](docs/GAME_DEV_TOOLKIT.md)；宣发视频（TapTap 实机录屏、宣传片、搞笑/抽象短视频、分发）见 [游戏宣发视频工作流](docs/GAME_PROMO_VIDEO_PIPELINE.md)，配套脚本在 `scripts/promo/`，机器可读目录为 [game-toolkit-catalog.json](docs/game-toolkit-catalog.json)。
 
 所有游戏图文和视频宣发都必须添加相关 tag / 话题标签；发布与验收步骤见 [游戏宣发与话题标签规范](docs/GAME_PROMOTION_GUIDELINES.md)。
+
+多屏幕触控、Android TapTap 宿主与云真机的使用、证据和边界见 [移动游戏设备测试](docs/GAME_MOBILE_TESTING.md)。`npm run qa:android -- doctor` 检查本机 Android 测试环境；`npm run qa:browser -- --help` 查看五配置浏览器验收入口。浏览器和虚拟设备结果均有独立标记，不能冒充物理真机验收。
 
 VoiceStudio 的五款游戏配音分工、授权边界和本地 MCP 接入见 [VoiceStudio 游戏配音流水线](docs/VOICE_STUDIO_GAME_PIPELINE.md)。
 

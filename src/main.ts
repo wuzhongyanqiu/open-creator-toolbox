@@ -42,6 +42,7 @@ type Category =
   | "voice"
   | "writing"
   | "resource"
+  | "testing"
   | "document";
 type LicenseTier = "clear" | "verify" | "restricted";
 type Tool = {
@@ -61,6 +62,47 @@ type Tool = {
 type ToolStatus = { id: string; installed: boolean };
 
 const tools: Tool[] = [
+  {
+    id: "android-studio",
+    name: "Android Studio / Device Manager",
+    summary: "Android 虚拟设备、不同屏幕与系统版本，以及 TapTap 宿主兼容测试",
+    replaces: "移动设备测试",
+    categories: ["testing"],
+    color: "#478368",
+    mark: "A",
+    url: "https://developer.android.com/studio",
+    license: "IDE Apache-2.0 / SDK 按 Google 许可",
+    licenseTier: "verify",
+    licenseNote: "虚拟设备不代表厂商真机；本地 CLI 与安装步骤见移动测试工作流。",
+  },
+  {
+    id: "android-device-streaming",
+    name: "Android Device Streaming",
+    summary: "通过 Android Studio / DDP 连接云端物理 Android 设备",
+    replaces: "多机型物理验收",
+    categories: ["testing"],
+    color: "#477e8b",
+    mark: "D",
+    url: "https://developer.android.com/studio/run/android-device-streaming",
+    web: true,
+    license: "Google Cloud 服务条款 / 按配额和用量计费",
+    licenseTier: "verify",
+    licenseNote: "需账号、项目和权限；使用前核对账单与配额，工具箱未代为开通。",
+  },
+  {
+    id: "browserstack-app-live",
+    name: "BrowserStack App Live",
+    summary: "云端物理 Android / iOS 的 App 安装、操控与兼容性验证",
+    replaces: "远程真机测试",
+    categories: ["testing"],
+    color: "#8c7051",
+    mark: "B",
+    url: "https://www.browserstack.com/docs/app-live/overview/introduction",
+    web: true,
+    license: "商业云测试服务",
+    licenseTier: "verify",
+    licenseNote: "App Live 可装 App；Live 网站测试不等于宿主测试。需账户和适用套餐。",
+  },
   {
     id: "gimp",
     name: "GIMP",
@@ -625,6 +667,13 @@ const tools: Tool[] = [
 
 const workflows = [
   {
+    icon: "ShieldCheck",
+    title: "移动游戏发布验收",
+    description: "布局矩阵、Android 宿主、物理设备分层留证",
+    steps: ["浏览器矩阵", "Android Emulator", "TapTap 宿主", "云端 / 本地真机"],
+    note: "逐项记录测试范围；模拟器通过不等于物理性能或真实广告库存通过",
+  },
+  {
     icon: "Gamepad2",
     title: "塔防与经营 3D",
     description: "统一建模、材质与移动端压缩",
@@ -695,6 +744,7 @@ const categories: Array<{ id: "all" | Category; label: string; icon: string }> =
     { id: "writing", label: "剧情文案", icon: "BookOpen" },
     { id: "resource", label: "开放资源", icon: "PackageOpen" },
     { id: "document", label: "文档 PDF", icon: "Files" },
+    { id: "testing", label: "设备测试", icon: "ShieldCheck" },
   ];
 
 let activeCategory: "all" | Category = "all";
@@ -742,7 +792,7 @@ function renderSidebar() {
   navigation.innerHTML = categories
     .map(
       (category) =>
-        `<button class="nav-item ${activeCategory === category.id ? "active" : ""}" data-category="${category.id}"><i data-lucide="${category.icon}"></i><span>${category.label}</span></button>`,
+        `<button class="nav-item ${activeCategory === category.id ? "active" : ""}" data-category="${category.id}" aria-label="${category.label}" aria-pressed="${activeCategory === category.id}"><i data-lucide="${category.icon}"></i><span>${category.label}</span></button>`,
     )
     .join("");
   navigation

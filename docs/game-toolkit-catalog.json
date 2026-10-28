@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "reviewedAt": "2026-10-18",
+  "reviewedAt": "2026-10-28",
   "tiers": {
     "clear": "工具或资产许可明确，可进入商业制作；仍需保留许可文本和来源快照。",
     "verify": "工具本身可用，但模型、插件、社区资产、采样或署名义务必须逐项核对。",
@@ -12,7 +12,8 @@
     "asset-generation": "美术资产生成",
     "audio": "音频生成与素材",
     "promo-video": "宣发视频录制、剪辑、生成",
-    "distribution": "多平台分发"
+    "distribution": "多平台分发",
+    "device-testing": "移动设备模拟与宿主验收"
   },
   "entries": [
     {
@@ -795,6 +796,107 @@
       ],
       "notes": "独立账号、额度与 TRIPO_API_KEY；此次未验证连接。与 MIT TripoSR 不同；输出回 Blender 清理、减面、UV、材质、绑定与导出。",
       "category": "asset-generation"
+    },
+    {
+      "id": "browser-mobile-matrix",
+      "name": "移动浏览器矩阵（本仓库）",
+      "category": "device-testing",
+      "kind": "script",
+      "license": "MIT",
+      "tier": "clear",
+      "source": "https://github.com/wuzhongyanqiu/open-creator-toolbox",
+      "recommendedFor": [
+        "responsive-layout",
+        "touch-flow",
+        "mobile-screenshots"
+      ],
+      "localStatus": "installed",
+      "reviewedAt": "2026-10-28",
+      "notes": "五种屏幕配置，借用目标游戏已锁定的Playwright；无场景仅SMOKE_PASS，有场景仅覆盖实际检查；releaseGate始终NOT_EVALUATED。默认阻止外部请求，证据写忽略目录。"
+    },
+    {
+      "id": "android-emulator",
+      "name": "Android Emulator / SDK / ADB",
+      "category": "device-testing",
+      "kind": "device-emulator",
+      "license": "Android SDK License / component-specific licenses",
+      "tier": "verify",
+      "source": "https://developer.android.com/studio/run/emulator",
+      "recommendedFor": [
+        "android-host-integration",
+        "webview",
+        "device-lifecycle",
+        "virtual-device-capture"
+      ],
+      "localStatus": "installed",
+      "reviewedAt": "2026-10-28",
+      "notes": "2026-10-28实测：JDK21、Command-line Tools23.0、ADB37.0.1、Emulator37.2.12稳定版与Android15/API35 Google APIs ARM64已装；小屏/长屏/平板三种专属AVD冷启动、wm尺寸/密度与PNG回读通过。TapTap中国官方APK身份、安装、小屏游客首页通过；登录、真实广告、双账号榜单、游戏候选完整流程与手机性能仍未验收。通用屏幕不是厂商ROM/GPU，不自动通过发布门禁。"
+    },
+    {
+      "id": "android-studio",
+      "name": "Android Studio / Device Manager",
+      "category": "device-testing",
+      "kind": "desktop-ide",
+      "license": "Apache-2.0 IDE / Android SDK License",
+      "tier": "verify",
+      "source": "https://developer.android.com/studio",
+      "recommendedFor": [
+        "avd-management",
+        "android-device-streaming"
+      ],
+      "localStatus": "not-installed",
+      "reviewedAt": "2026-10-28",
+      "notes": "可选图形界面；CLI SDK已装也不代表Android Studio已装。"
+    },
+    {
+      "id": "ios-simulator",
+      "name": "Xcode iOS Simulator",
+      "category": "device-testing",
+      "kind": "device-simulator",
+      "license": "Apple Xcode and SDKs Agreement",
+      "tier": "verify",
+      "source": "https://developer.apple.com/documentation/xcode/running-your-app-on-simulated-or-physical-devices",
+      "recommendedFor": [
+        "safari-layout",
+        "ios-simulator-build"
+      ],
+      "localStatus": "not-installed",
+      "reviewedAt": "2026-10-28",
+      "notes": "只在macOS上运行；第三方App Store真机包不等于Simulator构建，不能承诺安装iOS TapTap。"
+    },
+    {
+      "id": "android-device-streaming",
+      "name": "Android Device Streaming / Google DDP",
+      "category": "device-testing",
+      "kind": "cloud-physical-device",
+      "license": "Google Cloud service terms; usage-based pricing",
+      "tier": "verify",
+      "source": "https://developer.android.com/studio/run/android-device-streaming",
+      "recommendedFor": [
+        "physical-android",
+        "vendor-device-coverage",
+        "remote-adb"
+      ],
+      "localStatus": "not-installed",
+      "reviewedAt": "2026-10-28",
+      "notes": "云物理Android，需账号/项目/权限/配额及计费核对，未开通或租机。DDP官方Agent Skill可后续接入。Firebase Test Lab已弃用，Streaming继续支持；不承诺固定免费额度。"
+    },
+    {
+      "id": "browserstack-app-live",
+      "name": "BrowserStack App Live",
+      "category": "device-testing",
+      "kind": "cloud-physical-device",
+      "license": "Commercial service terms",
+      "tier": "verify",
+      "source": "https://www.browserstack.com/docs/app-live/overview/introduction",
+      "recommendedFor": [
+        "physical-android",
+        "physical-ios",
+        "app-host-testing"
+      ],
+      "localStatus": "not-installed",
+      "reviewedAt": "2026-10-28",
+      "notes": "App Live才支持App安装；Live是网站测试。需要账号、适用套餐和安装/登录权限，本次未开通。"
     }
   ]
 }

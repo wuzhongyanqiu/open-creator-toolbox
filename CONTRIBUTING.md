@@ -12,6 +12,8 @@
 
 ```bash
 npm install
+npm run catalog:check
+npm run qa:check
 npm run build
 cargo test --manifest-path src-tauri/Cargo.toml
 ```

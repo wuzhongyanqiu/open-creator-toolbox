@@ -19,6 +19,12 @@ struct DesktopTool {
 
 const TOOLS: &[DesktopTool] = &[
     DesktopTool {
+        id: "android-studio",
+        mac_apps: &["Android Studio.app"],
+        commands: &["studio", "android-studio"],
+        windows_paths: &[r"Android\Android Studio\bin\studio64.exe"],
+    },
+    DesktopTool {
         id: "gimp",
         mac_apps: &["GIMP.app", "GIMP-3.0.app"],
         commands: &["gimp", "gimp-3.0"],

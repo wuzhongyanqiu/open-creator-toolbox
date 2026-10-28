@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "description": "通用 Android 屏幕配置，非 OEM 真机；不能证明特定品牌兼容性、真实 GPU 性能或 TapTap 线上广告/排行榜正常。",
+  "systemImage": "system-images;android-35;google_apis;arm64-v8a",
+  "profiles": [
+    {
+      "id": "compact-phone",
+      "label": "紧凑手机 · 通用屏幕，非 OEM 真机",
+      "widthDp": 360,
+      "heightDp": 640,
+      "widthPx": 720,
+      "heightPx": 1280,
+      "densityDpi": 320,
+      "ramMb": 2048
+    },
+    {
+      "id": "tall-phone",
+      "label": "中大屏手机 · 通用屏幕，非 OEM 真机",
+      "widthDp": 390,
+      "heightDp": 844,
+      "widthPx": 780,
+      "heightPx": 1688,
+      "densityDpi": 320,
+      "ramMb": 2048
+    },
+    {
+      "id": "tablet",
+      "label": "平板 · 通用屏幕，非 OEM 真机",
+      "widthDp": 800,
+      "heightDp": 1280,
+      "widthPx": 1200,
+      "heightPx": 1920,
+      "densityDpi": 240,
+      "ramMb": 2048
+    }
+  ]
+}

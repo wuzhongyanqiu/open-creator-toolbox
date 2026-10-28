@@ -16,6 +16,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run catalog:check
+      - run: npm run qa:check
       - run: npm run build
 
   rust:
