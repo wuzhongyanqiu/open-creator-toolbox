@@ -6,9 +6,21 @@ import {createHash} from 'node:crypto';
 import {mkdtemp, mkdir, writeFile, readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {checks,validateMetadata} from './save-upgrade.mjs';
+import {checks,validateMetadata,parseArgs} from './save-upgrade.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
+const requiredArgs=['--project',ROOT,'--old-dir',path.join(ROOT,'output/old'),'--new-dir',path.join(ROOT,'output/new'),'--scenario',path.join(ROOT,'output/scenario.mjs'),'--out',path.join(ROOT,'output/evidence')];
+test('channel is optional and bundled Chromium and WebKit defaults remain unchanged',()=>{
+ const chromium=parseArgs(requiredArgs);assert.equal(chromium.engine,'chromium');assert.equal(chromium.channel,undefined);
+ const webkit=parseArgs([...requiredArgs,'--engine','webkit']);assert.equal(webkit.engine,'webkit');assert.equal(webkit.channel,undefined);
+});
+test('installed Chrome channel is accepted only with Chromium, including its default engine',()=>{
+ assert.equal(parseArgs([...requiredArgs,'--channel','chrome']).channel,'chrome');
+ assert.equal(parseArgs([...requiredArgs,'--channel','chrome','--engine','chromium']).channel,'chrome');
+ assert.throws(()=>parseArgs([...requiredArgs,'--engine','webkit','--channel','chrome']),/only accepts chrome with --engine chromium/);
+ for(const channel of ['edge','chromium','chrome-beta','/tmp/browser'])assert.throws(()=>parseArgs([...requiredArgs,'--channel',channel]),/only accepts chrome/);
+ assert.throws(()=>parseArgs([...requiredArgs,'--channel']),/Unknown or incomplete/);
+});
 const metadata={seedKind:'SANITIZED_FIXTURE',fixtureVersion:'fixture-v1',storageTypes:['localStorage']};
 const values={progress:4,resources:85,unlocks:['boat-2'],records:117};
 const checked=(overrides={})=>Object.entries({...values,...overrides}).map(([category,value])=>({storage:'localStorage',category,name:category+' preserved',expected:values[category],actual:value}));
@@ -30,6 +42,7 @@ test('runner calculates comparisons instead of accepting a passed flag',()=>{
 
 const project=process.env.MOBILE_QA_PLAYWRIGHT_PROJECT;
 const engine=process.env.MOBILE_QA_BROWSER_ENGINE??'chromium';
+const channel=process.env.MOBILE_QA_BROWSER_CHANNEL;
 const integrationOptions={skip:project?false:'Set MOBILE_QA_PLAYWRIGHT_PROJECT to an existing game repo with Playwright/Chromium.'};
 async function fixtures(mode){
  const parent=path.join(ROOT,'output/mobile-qa');await mkdir(parent,{recursive:true});const dir=await mkdtemp(path.join(parent,'save-upgrade-regression-'));const old=path.join(dir,'old'),candidate=path.join(dir,'candidate');await mkdir(old);await mkdir(candidate);
@@ -48,7 +61,7 @@ export async function assertReload({page,before,reloadIndex}){const after=await 
 `);
  return {dir,old,candidate,scenario,out:path.join(dir,'evidence')};
 }
-async function run(f){const argv=[path.join(ROOT,'scripts/mobile-qa/save-upgrade.mjs'),'--engine',engine,'--project',path.resolve(project),'--old-dir',f.old,'--new-dir',f.candidate,'--scenario',f.scenario,'--out',f.out,'--timeout-ms','2000','--stage-timeout-ms','5000'];
+async function run(f){const argv=[path.join(ROOT,'scripts/mobile-qa/save-upgrade.mjs'),'--engine',engine,...(channel?['--channel',channel]:[]),'--project',path.resolve(project),'--old-dir',f.old,'--new-dir',f.candidate,'--scenario',f.scenario,'--out',f.out,'--timeout-ms','2000','--stage-timeout-ms','5000'];
  return await new Promise((resolve,reject)=>{const child=spawn(process.execPath,argv,{stdio:['ignore','pipe','pipe']});let stdout='',stderr='';child.stdout.on('data',x=>stdout+=x);child.stderr.on('data',x=>stderr+=x);const timer=setTimeout(()=>{child.kill('SIGKILL');reject(new Error('Save regression watchdog expired'));},30000);child.on('error',reject);child.on('close',code=>{clearTimeout(timer);resolve({code,stdout,stderr});});});}
 for(const mode of ['preserve','reset','duplicate'])test('same-origin real-browser '+mode,integrationOptions,async()=>{
  const f=await fixtures(mode);const result=await run(f);const report=JSON.parse(await readFile(path.join(f.out,'report.json'),'utf8'));
@@ -56,7 +69,7 @@ for(const mode of ['preserve','reset','duplicate'])test('same-origin real-browse
   assert.equal(result.code,0,result.stderr);assert.equal(report.status,'SAVE_UPGRADE_PASS');assert.equal(report.stages.length,4);assert.equal(new Set(report.stages.map(s=>s.origin)).size,1);assert.equal(report.stages.every(s=>s.checks.every(c=>c.passed)),true);
   assert.equal(report.stages[0].storage.localStorage[0].keySha256,createHash('sha256').update('fixture-save-v1').digest('hex'));assert.equal(report.stages[1].storage.localStorage.length,2);
  }else {assert.equal(result.code,1,JSON.stringify(report.failures));assert.equal(report.status,'FAIL');if(mode==='reset')assert.ok(report.failures.some(x=>x.includes('Storage.clear')));if(mode==='duplicate')assert.ok(report.stages.find(s=>s.name==='candidate-reload-1').checks.some(c=>!c.passed));}
- assert.equal(report.browserEngine,engine);assert.equal(report.releaseGate,'NOT_EVALUATED');const raw=await readFile(path.join(f.out,'report.json'),'utf8');assert.equal(raw.includes('boat-2'),false);assert.equal(raw.includes('"coins"'),false);
+ assert.equal(report.browserEngine,engine);assert.equal(report.requestedBrowserChannel,channel??null);assert.equal(report.browser.channel,channel??'bundled-'+engine);assert.equal(report.releaseGate,'NOT_EVALUATED');const raw=await readFile(path.join(f.out,'report.json'),'utf8');assert.equal(raw.includes('boat-2'),false);assert.equal(raw.includes('"coins"'),false);
  process.stdout.write(`Saved ${mode} evidence: ${f.out}\n`);
 });
 
