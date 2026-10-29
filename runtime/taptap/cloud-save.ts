@@ -1,7 +1,7 @@
 /** TapTap H5 immutable backups. No SDK package, credentials or cross-repository imports. */
 export type RawSnapshot = Record<string, string | null>;
 export interface SaveKey { key: string; required?: boolean }
-export interface StoragePort { getItem(key: string): string | null; setItem(key: string, value: string): void; removeItem(key: string): void }
+export interface StoragePort { getItem(key: string): string | null; setItem(key: string, value: string): void; removeItem(key: string): void; readonly length?: number; key?(index: number): string | null }
 export type NativeOptions = Record<string, unknown> & { success: (value?: any) => void; fail: (error?: any) => void };
 export interface CloudRuntime {
   env: { USER_DATA_PATH: string };
@@ -38,8 +38,10 @@ export interface CloudState {
   lastCloudSavedAt: number | null;
   backups: BackupRow[];
   retryAt: number | null;
+  errno?: number | null;
+  localRecoveryCount: number;
 }
-export type CloudResult = { ok: true; uuid?: string } | { ok: false; code: string };
+export type CloudResult = { ok: true; uuid?: string } | { ok: false; code: string; errno?: number };
 type Archive = { uuid: string; fileId: string; name: string; summary?: string };
 type Envelope = { format: 'taptap-raw-save/1'; appId: string; schema: string | number; deviceId: string; revision: number; savedAt: number; payload: RawSnapshot; payloadSha256: string };
 type Anchor = { uuid: string; seen: string[]; payloadSha256: string };
@@ -47,16 +49,18 @@ type Meta = { v: 1; deviceId: string; revision: number; lastAttempt: number | nu
 type Journal = { format: 'taptap-save-journal/1'; appId: string; schema: string | number; phase: 'prepared' | 'applying' | 'committed' | 'rollback-required'; before: RawSnapshot; after: RawSnapshot };
 const FORMAT = 'taptap-raw-save/1';
 const MIN_UPLOAD_MS = 75_000;
-class CloudError extends Error { code: string; constructor(code: string) { super(code); this.code = code; } }
+class CloudError extends Error { code: string; errno?: number; constructor(code: string, errno?: number) { super(code); this.code = code; this.errno = errno; } }
 function fail(code: string): never { throw new CloudError(code); }
 const codeOf = (error: unknown) => error instanceof CloudError ? error.code : 'UNEXPECTED';
 const object = (v: unknown): v is Record<string, any> => !!v && typeof v === 'object' && !Array.isArray(v);
 const integer = (v: unknown) => Number.isSafeInteger(v) && Number(v) >= 0;
 const canonical = (raw: RawSnapshot) => JSON.stringify(Object.fromEntries(Object.keys(raw).sort().map(k => [k, raw[k]])));
 export const cloudJournalKey = (appId: string) => `taptap-cloud:${appId}:journal`;
+const recoveryPrefix = (appId: string) => `taptap-cloud:${appId}:before-restore:`;
+const recoveryIndexKey = (appId: string) => `taptap-cloud:${appId}:before-restore-index`;
 const metaKey = (appId: string) => `taptap-cloud:${appId}:meta`;
 function keyShape(raw: unknown, keys: readonly SaveKey[]): raw is RawSnapshot {
-  return object(raw) && Object.keys(raw).length === keys.length && keys.every(k => Object.hasOwn(raw, k.key) && (typeof raw[k.key] === 'string' || raw[k.key] === null));
+  return object(raw) && Object.keys(raw).length === keys.length && keys.every(k => Object.prototype.hasOwnProperty.call(raw, k.key) && (typeof raw[k.key] === 'string' || raw[k.key] === null));
 }
 function readRaw(storage: StoragePort, keys: readonly SaveKey[]): RawSnapshot {
   try { return Object.fromEntries(keys.map(k => [k.key, storage.getItem(k.key)])); } catch { return fail('LOCAL_READ'); }
@@ -78,7 +82,8 @@ export function recoverCloudJournal(config: Pick<CloudConfig, 'appId' | 'keys' |
     if (!object(j) || j.format !== 'taptap-save-journal/1' || j.appId !== appId || !['prepared', 'applying', 'committed', 'rollback-required'].includes(j.phase) || !keyShape(j.before, keys) || !keyShape(j.after, keys)) return { status: 'blocked', code: 'JOURNAL_INVALID' };
     if (config.schema !== undefined && j.schema !== config.schema) return { status: 'blocked', code: 'WRONG_SCHEMA' };
     if (j.phase === 'committed' && config.validate) { try { if (!config.validate(j.after)) return { status: 'blocked', code: 'INVALID_PAYLOAD' }; } catch { return { status: 'blocked', code: 'INVALID_PAYLOAD' }; } }
-    const committed = j.phase === 'committed' && canonical(readRaw(storage, keys)) === canonical(j.after);
+    const committed = j.phase === 'committed';
+    if (committed && canonical(readRaw(storage, keys)) !== canonical(j.after)) return { status: 'blocked', code: 'JOURNAL_COMMITTED_CHANGED' };
     if (!committed) writeRaw(storage, j.before, keys);
     storage.removeItem(cloudJournalKey(appId));
     if (storage.getItem(cloudJournalKey(appId)) !== null) fail('JOURNAL_WRITE');
@@ -94,7 +99,7 @@ export function nativeCall<T>(invoke: (options: NativeOptions) => void, fields: 
     let settled = false;
     const finish = (ok: boolean, value: unknown) => { if (settled) return; settled = true; clearTimeout(timer); if (ok) resolve(value as T); else reject(value); };
     const timer = setTimeout(() => finish(false, new CloudError('SDK_TIMEOUT')), timeoutMs);
-    try { invoke({ ...fields, success: value => finish(true, value), fail: () => finish(false, new CloudError('SDK_FAILURE')) }); }
+    try { invoke({ ...fields, success: value => finish(true, value), fail: error => { const errno = object(error) && [400000,400001,400002,400003,400007,400009,400100,400101,400200,400201,400202].includes(error.errno) ? error.errno : undefined; finish(false, new CloudError('SDK_FAILURE', errno)); } }); }
     catch { finish(false, new CloudError('SDK_THROW')); }
   });
 }
@@ -128,14 +133,45 @@ export class CloudSaveController {
         this.meta = { v: 1, deviceId: m.deviceId, revision: m.revision, lastAttempt: m.lastAttempt, lastLocal: m.lastLocal, lastCloud: m.lastCloud, anchor: m.anchor, auto: false };
       }
     } catch (e) { initialError = e instanceof SyntaxError ? 'META_INVALID' : codeOf(e) === 'UNEXPECTED' ? 'LOCAL_READ' : codeOf(e); }
-    this.state = { status: initialError ? 'error' : 'idle', code: initialError, auto: false, lastLocalSavedAt: this.meta.lastLocal, lastCloudSavedAt: this.meta.lastCloud, backups: [], retryAt: null };
+    this.state = { status: initialError ? 'error' : 'idle', code: initialError, auto: false, lastLocalSavedAt: this.meta.lastLocal, lastCloudSavedAt: this.meta.lastCloud, backups: [], retryAt: null, errno: null, localRecoveryCount: this.localRecoveryIds().length };
   }
   getState(): CloudState { return { ...this.state, backups: this.state.backups.map(x => ({ ...x })) }; }
   subscribe(listener: (s: CloudState) => void): () => void { this.listeners.add(listener); listener(this.getState()); return () => this.listeners.delete(listener); }
-  private emit(status?: CloudState['status'], code: string | null = null) {
-    if (status) this.state.status = status; this.state.code = code; this.state.auto = this.meta.auto;
+  private emit(status?: CloudState['status'], code: string | null = null, errno: number | null = null) {
+    if (status) this.state.status = status; this.state.code = code; this.state.errno = errno; this.state.auto = this.meta.auto;
     this.state.lastLocalSavedAt = this.meta.lastLocal; this.state.lastCloudSavedAt = this.meta.lastCloud;
     for (const f of this.listeners) { try { f(this.getState()); } catch { /* UI observers cannot change backup outcome. */ } }
+  }
+  private localRecoveryIds(): string[] {
+    const prefix = recoveryPrefix(this.c.appId), ids = new Set<string>();
+    try {
+      const text = this.c.storage.getItem(recoveryIndexKey(this.c.appId));
+      if (text !== null) { const index = JSON.parse(text); if (object(index) && index.format === 'taptap-before-restore-index/1' && index.appId === this.c.appId && Array.isArray(index.ids)) for (const id of index.ids) if (typeof id === 'string' && id.startsWith(prefix)) ids.add(id); }
+      // Real Storage can also find an immutable backup left by an interrupted index write.
+      if (typeof this.c.storage.length === 'number' && this.c.storage.key) for (let i = 0; i < this.c.storage.length; i++) { const id = this.c.storage.key(i); if (id?.startsWith(prefix)) ids.add(id); }
+    } catch { /* Export must remain non-destructive when storage cannot be enumerated. */ }
+    return Array.from(ids);
+  }
+  /** Player-initiated offline export; raw before bytes survive even when they were corrupt/future schema. */
+  exportLocalRecovery(): string | null {
+    try {
+      const records = this.localRecoveryIds().map(id => ({ id, raw: this.c.storage.getItem(id) })).filter(x => x.raw !== null);
+      return records.length ? JSON.stringify({ format: 'taptap-local-recovery-export/1', appId: this.c.appId, records }) : null;
+    } catch { this.emit('error', 'LOCAL_READ'); return null; }
+  }
+  private async preserveBefore(raw: RawSnapshot, s: ReturnType<CloudSaveController['session']>) {
+    const payloadSha256 = await this.digest(raw); s.check();
+    const nonce = Array.from(this.crypto().getRandomValues(new Uint8Array(8)), x => x.toString(16).padStart(2, '0')).join('');
+    const id = recoveryPrefix(this.c.appId) + nonce;
+    const text = JSON.stringify({ format: 'taptap-before-restore/1', appId: this.c.appId, schema: this.c.schema, savedAt: this.now(), payload: raw, payloadSha256 });
+    try {
+      this.c.storage.setItem(id, text); if (this.c.storage.getItem(id) !== text) fail('LOCAL_BACKUP_WRITE');
+      const indexText = this.c.storage.getItem(recoveryIndexKey(this.c.appId)); let ids: string[] = [];
+      if (indexText !== null) { const old = JSON.parse(indexText); if (!object(old) || old.format !== 'taptap-before-restore-index/1' || old.appId !== this.c.appId || !Array.isArray(old.ids) || old.ids.some((x: unknown) => typeof x !== 'string' || !x.startsWith(recoveryPrefix(this.c.appId)))) fail('LOCAL_BACKUP_INVALID'); ids = old.ids; }
+      const index = JSON.stringify({ format: 'taptap-before-restore-index/1', appId: this.c.appId, ids: Array.from(new Set([...ids, id])) });
+      this.c.storage.setItem(recoveryIndexKey(this.c.appId), index); if (this.c.storage.getItem(recoveryIndexKey(this.c.appId)) !== index) fail('LOCAL_BACKUP_WRITE');
+      this.state.localRecoveryCount = this.localRecoveryIds().length;
+    } catch (e) { if (e instanceof CloudError) throw e; fail('LOCAL_BACKUP_WRITE'); }
   }
   private now() { return (this.c.now ?? Date.now)(); }
   private crypto() { const c = this.c.crypto ?? globalThis.crypto; if (!c?.subtle || !c.getRandomValues) fail('HASH_UNAVAILABLE'); return c; }
@@ -167,7 +203,7 @@ export class CloudSaveController {
     const m = /^([a-f0-9]{16})_r([0-9]+)_([a-f0-9]{12})$/.exec(name.slice(prefix.length));
     return m && integer(Number(m[2])) && Number(m[2]) > 0 ? { deviceId: m[1], revision: Number(m[2]), checksum: m[3] } : null;
   }
-  private name(e: Envelope) { return `c_${this.c.appId}_${e.deviceId}_r${e.revision}_${e.payloadSha256.slice(0, 12)}`; }
+  private name(e: Envelope) { const name = `c_${this.c.appId}_${e.deviceId}_r${e.revision}_${e.payloadSha256.slice(0, 12)}`; if (new TextEncoder().encode(name).length > 60) fail('ARCHIVE_NAME_TOO_LONG'); return name; }
   private async archives(s: ReturnType<CloudSaveController['session']>): Promise<Archive[]> {
     const manager = s.runtime.getCloudSaveManager();
     const res = await this.call<any>(s, o => manager.getArchiveList(o));
@@ -206,11 +242,11 @@ export class CloudSaveController {
     if (this.busy) return { ok: false, code: 'BUSY' };
     this.busy = true; this.emit('busy');
     try { const result = await action(); if (this.state.status !== 'restored' && this.state.status !== 'conflict') this.emit('ready'); return result; }
-    catch (e) { const code = codeOf(e); this.meta.auto = false; this.clearTimer(); if (code === 'ACCOUNT_CHANGED' || code === 'CLOUD_CONFLICT') { this.ticket = null; } this.emit(code === 'CLOUD_CONFLICT' || code === 'ACCOUNT_CHANGED' ? 'conflict' : 'error', code); return { ok: false, code }; }
+    catch (e) { const code = codeOf(e); this.meta.auto = false; this.clearTimer(); if (code === 'ACCOUNT_CHANGED' || code === 'CLOUD_CONFLICT') { this.ticket = null; } const errno = e instanceof CloudError ? e.errno : undefined; this.emit(code === 'CLOUD_CONFLICT' || code === 'ACCOUNT_CHANGED' ? 'conflict' : 'error', code, errno ?? null); return { ok: false, code, ...(errno === undefined ? {} : { errno }) }; }
     finally { this.busy = false; this.schedule(); }
   }
   listBackups(): Promise<CloudResult> {
-    return this.execute(async () => { const s = this.session(), raw = this.snapshot(false), list = await this.archives(s); this.ticket = { raw: canonical(raw), ids: list.map(x => x.uuid), account: s.account, epoch: s.epoch, localRevision: this.c.localRevision?.() }; this.state.backups = this.rows(list); return { ok: true }; });
+    return this.execute(async () => { const s = this.session(), raw = this.snapshot(false), localRevision = this.c.localRevision?.(); const list = await this.archives(s); this.ticket = { raw: canonical(raw), ids: list.map(x => x.uuid), account: s.account, epoch: s.epoch, localRevision }; this.state.backups = this.rows(list); return { ok: true }; });
   }
   backup(): Promise<CloudResult> {
     if (this.backupPromise) return this.backupPromise;
@@ -269,7 +305,7 @@ export class CloudSaveController {
       if (hasCloudJournal(this.c.storage, this.c.appId)) fail('JOURNAL_PENDING');
       this.releaseWriteLock = this.c.lockWrites();
       let before: RawSnapshot;
-      try { before = this.snapshot(false); if (canonical(before) !== ticket.raw || this.c.localRevision?.() !== ticket.localRevision) fail('LOCAL_CHANGED'); }
+      try { before = this.snapshot(false); if (canonical(before) !== ticket.raw || this.c.localRevision?.() !== ticket.localRevision) fail('LOCAL_CHANGED'); await this.preserveBefore(before, s); if (canonical(this.snapshot(false)) !== ticket.raw || this.c.localRevision?.() !== ticket.localRevision) fail('LOCAL_CHANGED'); }
       catch (e) { this.releaseWriteLock?.(); this.releaseWriteLock = null; throw e; }
       const key = cloudJournalKey(this.c.appId), journal: Journal = { format: 'taptap-save-journal/1', appId: this.c.appId, schema: this.c.schema, phase: 'prepared', before, after: e.payload };
       const saveJournal = () => { try { const text = JSON.stringify(journal); this.c.storage.setItem(key, text); if (this.c.storage.getItem(key) !== text) fail('JOURNAL_WRITE'); } catch { fail('JOURNAL_WRITE'); } };
@@ -297,7 +333,7 @@ export class CloudSaveController {
     return this.execute(async () => { const s = this.session(), raw = this.snapshot(); this.checkAnchor(await this.archives(s)); this.meta.auto = true; this.persist(); this.dirty = await this.digest(raw) !== this.meta.anchor!.payloadSha256; if (!this.dirty) this.verifiedRaw = canonical(raw); return { ok: true }; });
   }
   /** Call only after the game's local write was acknowledged. */
-  notifyLocalSaved() { if (this.stopped || this.releaseWriteLock) return; this.meta.lastLocal = this.now(); try { this.dirty = this.verifiedRaw === null || canonical(this.snapshot(false)) !== this.verifiedRaw; } catch { this.meta.auto = false; this.clearTimer(); this.emit('error', 'LOCAL_READ'); return; } try { this.persist(); } catch { this.emit('error', 'LOCAL_WRITE'); return; } this.emit(); this.schedule(); }
+  notifyLocalSaved() { if (this.stopped || this.releaseWriteLock) return; this.meta.lastLocal = this.now(); try { this.dirty = this.verifiedRaw === null || canonical(this.snapshot(false)) !== this.verifiedRaw; } catch { this.meta.auto = false; this.clearTimer(); this.emit('error', 'LOCAL_READ'); return; } try { this.persist(); } catch { this.meta.auto = false; this.clearTimer(); this.emit('error', 'LOCAL_WRITE'); return; } this.emit(); this.schedule(); }
   invalidateAccount() { this.epoch++; this.ticket = null; this.meta.auto = false; this.clearTimer(); this.emit('conflict', 'ACCOUNT_CHANGED'); }
   private clearTimer() { if (this.timer) clearTimeout(this.timer); this.timer = null; }
   private schedule() {
@@ -309,21 +345,38 @@ export class CloudSaveController {
 }
 export const createCloudSaveController = (config: CloudConfig) => new CloudSaveController(config);
 
+function cloudMessage(s: CloudState) {
+  if (s.status === 'restored') return '整份存档已恢复，请重新加载游戏。';
+  if (s.status === 'busy') return '正在处理，请稍候…';
+  if (!s.code) return '首次请主动备份或选择恢复；不会自动覆盖本机进度。';
+  if (s.errno === 400003) return '云端空间不足，本机进度保留。';
+  if (s.errno === 400001 || s.code === 'RATE_LIMIT') return '备份间隔较短，请稍后重试。本机进度保留。';
+  if (s.code === 'SDK_UNAVAILABLE' || s.code === 'LOGIN_REQUIRED') return '请在TapTap中完成登录后使用云存档。';
+  if (s.code === 'ACCOUNT_CHANGED' || s.code === 'CLOUD_CONFLICT') return '账号或云端进度有变化，自动备份已停止。请刷新列表后选择整份进度。';
+  if (s.code === 'LOCAL_CHANGED') return '本机进度已有变化。请刷新备份列表后重新选择。';
+  if (['WRONG_APP','WRONG_SCHEMA','CHECKSUM','INVALID_PAYLOAD'].includes(s.code)) return '备份与当前游戏不兼容或未通过校验，本机进度未替换。';
+  if (['ROLLBACK_BLOCKED','JOURNAL_PENDING','RELOAD_REQUIRED'].includes(s.code)) return '恢复尚未完成，已暂停写入。请保留本机记录并重新加载。';
+  if (['LOCAL_READ','LOCAL_BLOCKED','LOCAL_WRITE','LOCAL_BACKUP_WRITE','LOCAL_BACKUP_INVALID'].includes(s.code)) return '本机记录暂时无法安全读写，已停止操作。原记录保留，请稍后重试。';
+  return '操作未完成，本机进度保留。请稍后重试。';
+}
+
 /** Small framework-free settings surface. All labels use textContent, never HTML from cloud metadata. */
 export function mountCloudControls(container: HTMLElement, controller: CloudSaveController): () => void {
   const root = document.createElement('section'); root.className = 'taptap-cloud-controls'; root.style.cssText = 'padding:12px 0;text-align:left;font-size:13px;line-height:1.6';
   const title = document.createElement('b'); title.textContent = '云存档';
   const status = document.createElement('p'), local = document.createElement('p'), remote = document.createElement('p'), list = document.createElement('div');
-  const backup = document.createElement('button'), refresh = document.createElement('button'), auto = document.createElement('button');
-  backup.textContent = '备份本机进度'; refresh.textContent = '查看云端备份'; auto.textContent = '开启自动备份';
-  for (const b of [backup, refresh, auto]) b.style.cssText = 'min-height:44px;margin:4px;padding:8px 12px;border:1px solid currentColor;border-radius:8px;background:transparent;color:inherit;font:inherit';
+  const backup = document.createElement('button'), refresh = document.createElement('button'), auto = document.createElement('button'), exportLocal = document.createElement('button');
+  exportLocal.textContent = '导出恢复前本机备份'; backup.textContent = '备份本机进度'; refresh.textContent = '查看云端备份'; auto.textContent = '开启自动备份';
+  for (const b of [backup, refresh, auto, exportLocal]) b.style.cssText = 'min-height:44px;margin:4px;padding:8px 12px;border:1px solid currentColor;border-radius:8px;background:transparent;color:inherit;font:inherit';
   backup.onclick = () => { void controller.backup(); }; refresh.onclick = () => { void controller.listBackups(); }; auto.onclick = () => { void controller.setAutoEnabled(!controller.getState().auto); };
-  root.append(title, status, local, remote, backup, refresh, auto, list); container.append(root);
+  exportLocal.onclick = () => { const data = controller.exportLocalRecovery(); if (!data) return; const url = URL.createObjectURL(new Blob([data], { type: 'application/json' })), a = document.createElement('a'); a.href = url; a.download = 'before-restore-backups.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); };
+  root.append(title, status, local, remote, backup, refresh, auto, exportLocal, list); container.append(root);
   const unsubscribe = controller.subscribe(s => {
-    status.textContent = s.status === 'restored' ? '整份存档已恢复，请重新加载游戏。' : s.status === 'busy' ? '正在处理，请稍候…' : s.code ? `操作未完成（${s.code}），本机进度保留。可稍后重试。` : '首次请主动备份或选择恢复；不会自动覆盖本机进度。';
+    status.textContent = cloudMessage(s);
     local.textContent = `本机最后成功保存：${s.lastLocalSavedAt === null ? '尚无记录' : new Date(s.lastLocalSavedAt).toLocaleString()}`;
     remote.textContent = `云端最后验证成功：${s.lastCloudSavedAt === null ? '尚无记录' : new Date(s.lastCloudSavedAt).toLocaleString()}`;
     for (const b of [backup, refresh, auto]) b.disabled = s.status === 'busy' || s.status === 'restored';
+    exportLocal.disabled = s.status === 'busy' || !s.localRecoveryCount;
     auto.textContent = s.auto ? '关闭自动备份' : '开启自动备份'; list.replaceChildren();
     for (const a of s.backups) {
       const row = document.createElement('div'), label = document.createElement('p'), choose = document.createElement('button');

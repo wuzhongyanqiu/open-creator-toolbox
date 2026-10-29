@@ -20,7 +20,7 @@ createCloudSaveController({
 });
 ```
 
-控制器：`getState()`、`subscribe(listener)`、`backup()`、`listBackups()`、`restore(uuid,{confirm:true})`、`setAutoEnabled(bool)`、`notifyLocalSaved()`、`invalidateAccount()`、`destroy()`。异步动作返回`{ok:true,uuid?}`或`{ok:false,code}`；不可从按钮出现/回调面板弹出推断保存成功。`notifyLocalSaved`只在游戏本地写确认成功后调用，不能把内存更新冒充落盘成功。
+控制器：`getState()`、`subscribe(listener)`、`backup()`、`listBackups()`、`restore(uuid,{confirm:true})`、`setAutoEnabled(bool)`、`notifyLocalSaved()`、`invalidateAccount()`、`exportLocalRecovery()`、`destroy()`。异步动作返回`{ok:true,uuid?}`或`{ok:false,code}`；不可从按钮出现/回调面板弹出推断保存成功。`notifyLocalSaved`只在游戏本地写确认成功后调用，不能把内存更新冒充落盘成功。
 
 设置UI可在现有容器挂`mountCloudControls(container,controller)`，卸载调用其返回函数。它显示本地/云最后确认时间、失败重试入口、列表与二次整份恢复确认；默认不自动备份或恢复。挂载后按各游戏字体管线重建中文子集。
 
@@ -44,11 +44,11 @@ const recovered = recoverCloudJournal({appId, schema:1, keys, storage:rawStorage
 ## 云策略
 
 - 上传只读取白名单原始字符串，required主key不存在、readBlocked、游戏校验失败或SHA256能力缺失都拒绝。保留原始字符串，不按字段取max或加法。
-- envelope含format/appId/schema/deviceId/revision/savedAt/payload与SHA256；文件写成功后才createArchive，创建独立device/revision不可变快照，再从云端下载、读取、验证匹配后才确认。没有updateArchive覆盖共享slot。
+- envelope含format/appId/schema/deviceId/revision/savedAt/payload与SHA256；文件写成功后才createArchive，创建独立device/revision不可变快照，再从云端下载、读取、验证匹配后才确认。没有updateArchive覆盖共享slot；生成的存档name先检查不超过60个UTF-8字节，否则安全失败。
 - 每次原生调用独立once/timeout；抛出、重复和晚回调不会完成另一请求。下载用独立随机文件路径，防超时的原生文件写迟到污染下一次读取。
 - 至少75秒上传间隔，跨页面保留lastAttempt；并发备份合并成一个动作，变动只记dirty、下次取最新原文。失败停止auto并留手动重试，不在失败时高频循环。
 - auto每次启动都默认关。只有玩家先验证过一个云anchor，再主动开启，且该UUID仍在当前账号列表时才允许；其他设备出现新快照、切账号或账号列表丢失anchor即停止。登录成功/切号必须调用invalidateAccount并更新accountToken。不能将临时login.code当稳定身份或写进payload。
-- 恢复必须先列出备份、再明确确认；下载校验后仍复核本地原文与localRevision自列表以来未变。多key before/after/phase journal先持久化再替换；部分失败尽力回滚，回滚未验证则保留journal与写锁，启动时恢复。
+- 恢复必须先列出备份、再明确确认；原文与localRevision在请求列表的任何await之前同一同步时点采集；下载校验后仍复核本地原文与localRevision自列表以来未变。先写独立、不可变的本机before-restore原文备份与索引并读回确认，再写多key before/after/phase journal并替换；成功后也不删除这些本机原文，可通过设置离线导出全部。备份或索引写失败不得替换主key。已committed journal若当前数据已不同于after，会阻止写入并保留当前+journal，不回滚另一页的新进度；部分失败尽力回滚，回滚未验证则保留journal与写锁，启动时恢复。
 - 最多保留本设备最近3份已验证快照，只有新备份已确认后才清理；至少保留3份的算法满足至少2份底线。任何其他设备、未知格式、损坏/未验证对象都不删。云配额满会安全失败，不提前删除历史腾位。清理服务失败可暂时多留，不能承诺服务拒绝时仍严格只剩3份。
 
 没有稳定账号生命周期信号时不能声称静默切账号已完全验证；宿主应验证会话事件与anchor列表的实际绑定。云和本机origin隔离、清缓存、游客切号、不同App ID均需单独验收。
@@ -61,4 +61,4 @@ Node.js22或更新版本，无新增依赖：
 node --experimental-strip-types --test runtime/taptap/cloud-save.test.mjs
 ```
 
-测试覆盖：重复/晚回调、timeout/throw、读写失败、SHA不可用、坏JSON/未来schema、75秒限流与并发合并、FS成功前不create、云回读校验、appId/schema/checksum错误、整份恢复/部分中断/回滚失败与启动恢复、未落盘进度token、切账号、其他设备冲突、清理边界与配额满。所有数据是脱敏合成fixture，未调用真实TapTap服务。
+测试覆盖：重复/晚回调、timeout/throw、读写失败、SHA不可用、坏JSON/未来schema、75秒限流与并发合并、FS成功前不create、云回读校验、appId/schema/checksum错误、整份恢复/部分中断/回滚失败与启动恢复、未落盘进度token、切账号、其他设备冲突、清理边界与配额满。所有数据是脱敏合成fixture，未调用真实TapTap服务。原生失败只保留白名单数字errno用于诊断，丢弃errMsg与任意其他字段；设置界面显示可理解的中文状态，不暴露内部英文错误码。源兼容ES2019 target与ES2020+DOM lib，不依赖Object.hasOwn。

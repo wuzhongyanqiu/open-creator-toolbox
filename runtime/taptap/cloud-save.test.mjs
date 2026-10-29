@@ -7,6 +7,8 @@ const good = n => JSON.stringify({v:1,coins:n,owned:['one']});
 const validate = raw => { const p=JSON.parse(raw.profile); return p.v===1 && Number.isFinite(p.coins) && (raw.run===null || JSON.parse(raw.run).v===1); };
 class Memory {
   map = new Map([['profile',good(10)],['run',null]]);
+  get length(){return this.map.size;}
+  key(i){return [...this.map.keys()][i]??null;}
   readError = false;
   writeHook = null;
   getItem(k){ if(this.readError)throw Error('denied');return this.map.get(k)??null; }
@@ -112,4 +114,29 @@ test('unchanged local saves do not generate repeated automatic uploads or SDK li
 
 test('duplicate list records cannot make retention count one UUID as several backups',async()=>{
  const h=harness();h.host.hooks.list=o=>o.success({saves:[...h.host.archives.values()].flatMap(a=>[a,a])});try{for(let i=0;i<5;i++){if(i)h.advance(75_000);h.storage.setItem('profile',good(i));await saved(h);}assert.equal(h.host.archives.size,3);assert.deepEqual([...h.host.archives.values()].map(a=>JSON.parse(a.data).revision).sort((a,b)=>a-b),[3,4,5]);}finally{dispose(h);}
+});
+
+test('a committed journal with newer current bytes blocks instead of rolling back another page progress',()=>{
+ const storage=new Memory(),before={profile:good(1),run:null},after={profile:good(2),run:null};storage.setItem('profile',good(999));const text=JSON.stringify({format:'taptap-save-journal/1',appId:'123456',schema:1,phase:'committed',before,after});storage.setItem(cloudJournalKey('123456'),text);const result=recoverCloudJournal({appId:'123456',schema:1,keys,storage,validate});assert.equal(result.status,'blocked');assert.equal(result.code,'JOURNAL_COMMITTED_CHANGED');assert.equal(storage.getItem('profile'),good(999));assert.equal(storage.getItem(cloudJournalKey('123456')),text);
+});
+test('successful restore durably keeps corrupt/future original bytes and permits offline export after journal removal',async()=>{
+ for(const original of ['{truncated-original',JSON.stringify({v:99,coins:987654})]){const h=harness();try{const id=await saved(h);h.storage.setItem('profile',original);await select(h);assert.equal((await h.ctrl.restore(id,{confirm:true})).ok,true);assert.equal(h.storage.getItem('profile'),good(10));assert.equal(hasCloudJournal(h.storage,'123456'),false);const data=JSON.parse(h.ctrl.exportLocalRecovery());assert.equal(JSON.parse(data.records[0].raw).payload.profile,original);assert.match(JSON.parse(data.records[0].raw).payloadSha256,/^[a-f0-9]{64}$/);const offline=new CloudSaveController({...h.config,runtime:()=>undefined,accountToken:()=>null,crypto:{}});assert.equal(offline.getState().localRecoveryCount,1);assert.equal(JSON.parse(JSON.parse(offline.exportLocalRecovery()).records[0].raw).payload.profile,original);offline.destroy();}finally{dispose(h);}}
+});
+test('before-restore record/index write failure cannot replace even one main key',async()=>{
+ for(const indexFailure of [false,true]){const h=harness();try{const id=await saved(h);h.storage.setItem('profile',good(88));await select(h);h.storage.writeHook=key=>{if(indexFailure?key.endsWith(':before-restore-index'):key.includes(':before-restore:'))throw Error('local quota');};assert.equal((await h.ctrl.restore(id,{confirm:true})).code,'LOCAL_BACKUP_WRITE');assert.equal(h.storage.getItem('profile'),good(88));assert.equal(h.storage.getItem('run'),null);assert.equal(h.reloads,0);assert.equal(h.locked,false);assert.equal(hasCloudJournal(h.storage,'123456'),false);}finally{dispose(h);}}
+});
+test('later restores append immutable local before copies instead of discarding the first original',async()=>{
+ const h=harness();let second;try{const id=await saved(h);h.storage.setItem('profile',good(88));await select(h);assert.equal((await h.ctrl.restore(id,{confirm:true})).ok,true);const first=JSON.parse(h.ctrl.exportLocalRecovery()).records[0];dispose(h);second=new CloudSaveController(h.config);h.storage.setItem('profile',good(99));assert.equal((await second.listBackups()).ok,true);assert.equal((await second.restore(id,{confirm:true})).ok,true);const records=JSON.parse(second.exportLocalRecovery()).records;assert.equal(records.length,2);assert.equal(h.storage.getItem(first.id),first.raw);assert.deepEqual(records.map(x=>JSON.parse(x.raw).payload.profile).sort(),[good(88),good(99)].sort());}finally{second?.destroy();dispose(h);}
+});
+test('list snapshot revision is captured before its first SDK await, including unsaved changes during network latency',async()=>{
+ let revision=1;const h=harness({localRevision:()=>revision});try{const id=await saved(h);let pending;h.host.hooks.list=o=>{pending=o;};const listed=h.ctrl.listBackups();for(let i=0;i<10&&!pending;i++)await new Promise(r=>setTimeout(r,1));revision++;pending.success({saves:[...h.host.archives.values()]});assert.equal((await listed).ok,true);delete h.host.hooks.list;assert.equal((await h.ctrl.restore(id,{confirm:true})).code,'LOCAL_CHANGED');assert.equal(h.locks,0);assert.equal(h.storage.getItem('profile'),good(10));}finally{dispose(h);}
+});
+test('archive name byte length is checked before file or cloud create',async()=>{
+ const h=harness({appId:'a'.repeat(32)});try{assert.equal((await h.ctrl.backup()).code,'ARCHIVE_NAME_TOO_LONG');assert.equal(h.host.calls.filter(x=>x==='write'||x==='create').length,0);assert.equal(h.storage.getItem('profile'),good(10));}finally{dispose(h);}
+});
+test('failed local notification metadata stops auto and cancels its scheduled retry',async()=>{
+ const h=harness();try{await saved(h);await h.ctrl.setAutoEnabled(true);h.storage.setItem('profile',good(21));h.ctrl.notifyLocalSaved();const calls=h.host.calls.length;h.storage.writeHook=key=>{if(key.endsWith(':meta'))throw Error('quota');};h.ctrl.notifyLocalSaved();assert.equal(h.ctrl.getState().auto,false);assert.equal(h.ctrl.getState().code,'LOCAL_WRITE');h.advance(75_000);h.ctrl.notifyLocalSaved();await new Promise(r=>setTimeout(r,2));assert.equal(h.host.calls.length,calls);}finally{dispose(h);}
+});
+test('SDK fail retains only allowlisted numeric errno and never errMsg or arbitrary fields',async()=>{
+ const secret='fake-token-must-not-leak';for(const errno of [400003,42,'400003'])await assert.rejects(nativeCall(o=>o.fail({errno,errMsg:secret,token:secret}),{},20),e=>{assert.equal(e.code,'SDK_FAILURE');assert.equal(e.errno,errno===400003?400003:undefined);assert.equal(e.message,'SDK_FAILURE');assert.equal(JSON.stringify(e).includes(secret),false);return true;});
 });
