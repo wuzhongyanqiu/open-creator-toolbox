@@ -75,7 +75,8 @@ function writeRaw(storage: StoragePort, raw: RawSnapshot, keys: readonly SaveKey
 export function recoverCloudJournal(config: Pick<CloudConfig, 'appId' | 'keys' | 'storage'> & Partial<Pick<CloudConfig, 'schema' | 'validate'>>): { status: 'none' | 'recovered' | 'committed' | 'blocked'; code?: string } {
   const { storage, appId, keys } = config;
   try {
-    const text = storage.getItem(cloudJournalKey(appId));
+    let text: string | null;
+    try { text = storage.getItem(cloudJournalKey(appId)); } catch { return { status: 'blocked', code: 'LOCAL_READ' }; }
     if (text === null) return { status: 'none' };
     let j: Journal;
     try { j = JSON.parse(text); } catch { return { status: 'blocked', code: 'JOURNAL_INVALID' }; }

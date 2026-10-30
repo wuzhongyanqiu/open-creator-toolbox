@@ -140,3 +140,7 @@ test('failed local notification metadata stops auto and cancels its scheduled re
 test('SDK fail retains only allowlisted numeric errno and never errMsg or arbitrary fields',async()=>{
  const secret='fake-token-must-not-leak';for(const errno of [400003,42,'400003'])await assert.rejects(nativeCall(o=>o.fail({errno,errMsg:secret,token:secret}),{},20),e=>{assert.equal(e.code,'SDK_FAILURE');assert.equal(e.errno,errno===400003?400003:undefined);assert.equal(e.message,'SDK_FAILURE');assert.equal(JSON.stringify(e).includes(secret),false);return true;});
 });
+
+test('transient first journal read failure is LOCAL_READ while hasCloudJournal conservatively blocks writes',()=>{
+ const storage=new Memory();storage.readError=true;assert.deepEqual(recoverCloudJournal({appId:'123456',schema:1,keys,storage,validate}),{status:'blocked',code:'LOCAL_READ'});assert.equal(hasCloudJournal(storage,'123456'),true);storage.readError=false;assert.deepEqual(recoverCloudJournal({appId:'123456',schema:1,keys,storage,validate}),{status:'none'});assert.equal(storage.getItem('profile'),good(10));
+});
