@@ -362,16 +362,31 @@ function cloudMessage(s: CloudState) {
 }
 
 /** Small framework-free settings surface. All labels use textContent, never HTML from cloud metadata. */
+export type DesktopShortcutResult = 'added' | 'already-added' | 'cancelled' | 'unavailable' | 'failed' | 'timeout';
+export interface DesktopShortcutHost { createHomeScreenWidget?(options: {success(result?: unknown): void; fail(error?: {errno?: number}): void}): unknown }
+/** Only an SDK callback confirms creation; a resolved return value is not confirmation. */
+export function createDesktopShortcut(host: DesktopShortcutHost | undefined, timeoutMs = 12000): Promise<DesktopShortcutResult> {
+ return new Promise(resolve => {
+  if(typeof host?.createHomeScreenWidget !== 'function'){resolve('unavailable');return;}
+  let finished=false;
+  const finish=(result:DesktopShortcutResult)=>{if(finished)return;finished=true;clearTimeout(timer);resolve(result);};
+  const timer=setTimeout(()=>finish('timeout'),timeoutMs);
+  try{host.createHomeScreenWidget({success:()=>finish('added'),fail:error=>finish(error?.errno===1518002?'already-added':error?.errno===1518003?'cancelled':'failed')});}catch{finish('failed');}
+ });
+}
+
 export function mountCloudControls(container: HTMLElement, controller: CloudSaveController): () => void {
   const root = document.createElement('section'); root.className = 'taptap-cloud-controls'; root.style.cssText = 'padding:12px 0;text-align:left;font-size:13px;line-height:1.6';
   const title = document.createElement('b'); title.textContent = '云存档';
+  const desktop=document.createElement('button'),desktopStatus=document.createElement('p');desktop.textContent='添加到桌面';let disposed=false;
+  desktop.onclick=()=>{desktop.disabled=true;void createDesktopShortcut((globalThis as {tap?:DesktopShortcutHost}).tap).then(result=>{if(disposed)return;desktop.disabled=false;desktopStatus.textContent=({added:'已添加到桌面快捷启动。','already-added':'已在桌面快捷启动中。',cancelled:'已取消添加，可稍后重试。',unavailable:'请在 TapTap 中打开后添加到桌面。',failed:'暂时无法添加，请稍后重试。',timeout:'平台暂未确认，请检查桌面后重试。'} as const)[result];});};
   const status = document.createElement('p'), local = document.createElement('p'), remote = document.createElement('p'), list = document.createElement('div');
   const backup = document.createElement('button'), refresh = document.createElement('button'), auto = document.createElement('button'), exportLocal = document.createElement('button');
   exportLocal.textContent = '导出恢复前本机备份'; backup.textContent = '备份本机进度'; refresh.textContent = '查看云端备份'; auto.textContent = '开启自动备份';
-  for (const b of [backup, refresh, auto, exportLocal]) b.style.cssText = 'min-height:44px;margin:4px;padding:8px 12px;border:1px solid currentColor;border-radius:8px;background:transparent;color:inherit;font:inherit';
+  for (const b of [backup, refresh, auto, exportLocal, desktop]) b.style.cssText = 'min-height:44px;margin:4px;padding:8px 12px;border:1px solid currentColor;border-radius:8px;background:transparent;color:inherit;font:inherit';
   backup.onclick = () => { void controller.backup(); }; refresh.onclick = () => { void controller.listBackups(); }; auto.onclick = () => { void controller.setAutoEnabled(!controller.getState().auto); };
   exportLocal.onclick = () => { const data = controller.exportLocalRecovery(); if (!data) return; const url = URL.createObjectURL(new Blob([data], { type: 'application/json' })), a = document.createElement('a'); a.href = url; a.download = 'before-restore-backups.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); };
-  root.append(title, status, local, remote, backup, refresh, auto, exportLocal, list); container.append(root);
+  root.append(title, status, local, remote, backup, refresh, auto, exportLocal, list, desktop, desktopStatus); container.append(root);
   const unsubscribe = controller.subscribe(s => {
     status.textContent = cloudMessage(s);
     local.textContent = `本机最后成功保存：${s.lastLocalSavedAt === null ? '尚无记录' : new Date(s.lastLocalSavedAt).toLocaleString()}`;
@@ -386,5 +401,5 @@ export function mountCloudControls(container: HTMLElement, controller: CloudSave
       row.append(label, choose); list.append(row);
     }
   });
-  return () => { unsubscribe(); root.remove(); };
+  return () => { disposed=true; unsubscribe(); root.remove(); };
 }

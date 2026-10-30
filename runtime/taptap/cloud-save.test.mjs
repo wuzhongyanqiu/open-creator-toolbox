@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { webcrypto } from 'node:crypto';
-import { CloudSaveController, nativeCall, recoverCloudJournal, cloudJournalKey, hasCloudJournal } from './cloud-save.ts';
+import { CloudSaveController, createDesktopShortcut, nativeCall, recoverCloudJournal, cloudJournalKey, hasCloudJournal } from './cloud-save.ts';
 const keys = [{key:'profile',required:true},{key:'run'}];
 const good = n => JSON.stringify({v:1,coins:n,owned:['one']});
 const validate = raw => { const p=JSON.parse(raw.profile); return p.v===1 && Number.isFinite(p.coins) && (raw.run===null || JSON.parse(raw.run).v===1); };
@@ -143,4 +143,13 @@ test('SDK fail retains only allowlisted numeric errno and never errMsg or arbitr
 
 test('transient first journal read failure is LOCAL_READ while hasCloudJournal conservatively blocks writes',()=>{
  const storage=new Memory();storage.readError=true;assert.deepEqual(recoverCloudJournal({appId:'123456',schema:1,keys,storage,validate}),{status:'blocked',code:'LOCAL_READ'});assert.equal(hasCloudJournal(storage,'123456'),true);storage.readError=false;assert.deepEqual(recoverCloudJournal({appId:'123456',schema:1,keys,storage,validate}),{status:'none'});assert.equal(storage.getItem('profile'),good(10));
+});
+
+test('desktop creation requires callback and classifies user choice without affecting saves', async()=>{
+ assert.equal(await createDesktopShortcut(undefined,1),'unavailable');
+ assert.equal(await createDesktopShortcut({createHomeScreenWidget:o=>{o.success();o.fail({errno:1518003});}},1),'added');
+ assert.equal(await createDesktopShortcut({createHomeScreenWidget:o=>o.fail({errno:1518002})},1),'already-added');
+ assert.equal(await createDesktopShortcut({createHomeScreenWidget:o=>o.fail({errno:1518003})},1),'cancelled');
+ assert.equal(await createDesktopShortcut({createHomeScreenWidget:()=>Promise.resolve()},1),'timeout');
+ assert.equal(await createDesktopShortcut({createHomeScreenWidget:()=>{throw Error('bridge');}},1),'failed');
 });
