@@ -151,5 +151,6 @@ test('desktop creation requires callback and classifies user choice without affe
  assert.equal(await createDesktopShortcut({createHomeScreenWidget:o=>o.fail({errno:1518002})},1),'already-added');
  assert.equal(await createDesktopShortcut({createHomeScreenWidget:o=>o.fail({errno:1518003})},1),'cancelled');
  assert.equal(await createDesktopShortcut({createHomeScreenWidget:()=>Promise.resolve()},1),'timeout');
+ assert.equal(await createDesktopShortcut({createHomeScreenWidget:()=>Promise.reject(Error('bridge'))},10),'failed');
  assert.equal(await createDesktopShortcut({createHomeScreenWidget:()=>{throw Error('bridge');}},1),'failed');
 });

@@ -371,7 +371,7 @@ export function createDesktopShortcut(host: DesktopShortcutHost | undefined, tim
   let finished=false;
   const finish=(result:DesktopShortcutResult)=>{if(finished)return;finished=true;clearTimeout(timer);resolve(result);};
   const timer=setTimeout(()=>finish('timeout'),timeoutMs);
-  try{host.createHomeScreenWidget({success:()=>finish('added'),fail:error=>finish(error?.errno===1518002?'already-added':error?.errno===1518003?'cancelled':'failed')});}catch{finish('failed');}
+  try{const result=host.createHomeScreenWidget({success:()=>finish('added'),fail:error=>finish(error?.errno===1518002?'already-added':error?.errno===1518003?'cancelled':'failed')});if(result&&typeof(result as Promise<unknown>).catch==='function')void(result as Promise<unknown>).catch(()=>finish('failed'));}catch{finish('failed');}
  });
 }
 
