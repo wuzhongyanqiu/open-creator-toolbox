@@ -121,3 +121,18 @@ test('undeclared IndexedDB assertions prevent a migration pass',integrationOptio
 test('configuration exception text is not echoed by top-level CLI',integrationOptions,async()=>{
  const f=await fixtures('preserve'),secret='unique-configuration-fake-secret-12345';await writeFile(f.scenario,`JSON.parse('invalid ${secret}');`);const result=await run(f);assert.equal(result.code,2);assert.equal((result.stdout+result.stderr).includes(secret),false);assert.match(result.stderr,/error SHA256: [a-f0-9]{64}/);
 });
+
+for(const mode of ['old-pass','candidate-fail','old-count-fail'])test('exact old optional 404 '+mode,integrationOptions,async()=>{
+ const f=await fixtures('preserve'),optional='/optional-azure-manifest.json';
+ const oldFile=path.join(f.old,'index.html');let old=await readFile(oldFile,'utf8');old=old.replace('<button id="seed">',`<img src="${optional}" alt="optional voice"><button id="seed">`);await writeFile(oldFile,old);
+ const b=await readFile(oldFile),digest=createHash('sha256').update(JSON.stringify([{path:'index.html',bytes:b.length,sha256:createHash('sha256').update(b).digest('hex')}])).digest('hex');
+ const meta={...metadata,oldSeedNetworkExceptions:[{oldBuildSha256:digest,path:optional,status:404,maxCount:1,reason:'optional old voice manifest known missing in this exact fixture'}]};
+ let scenario=await readFile(f.scenario,'utf8');scenario=scenario.replace(`export const metadata=${JSON.stringify(metadata)};`,`export const metadata=${JSON.stringify(meta)};`);
+ if(mode==='old-count-fail')scenario=scenario.replace("await page.click('#seed');","await page.reload({waitUntil:'load'});await page.click('#seed');");
+ await writeFile(f.scenario,scenario);
+ if(mode==='candidate-fail'){const file=path.join(f.candidate,'index.html'),html=await readFile(file,'utf8');await writeFile(file,html.replace('<script>',`<img src="${optional}" alt="unexpected candidate missing file"><script>`));}
+ const result=await run(f),report=JSON.parse(await readFile(path.join(f.out,'report.json'),'utf8'));
+ assert.equal(result.code,mode==='old-pass'?0:1,JSON.stringify({failures:report.failures,error:report.error,stderr:result.stderr}));
+ assert.equal(report.status,mode==='old-pass'?'SAVE_UPGRADE_PASS':'FAIL');assert.equal(report.oldNetworkExceptions[0].status,404);assert.equal(report.oldNetworkExceptions[0].pathSha256,createHash('sha256').update(optional).digest('hex'));
+ if(mode==='old-pass'){assert.equal(report.oldNetworkExceptions[0].observedResponses,1);assert.equal(report.cleanup.browser.confirmed,true);}else assert.ok(report.failures.some(x=>x==='HTTP 404 while serving build'));
+});

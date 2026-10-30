@@ -15,9 +15,10 @@
     "qa:ios": "python3 scripts/mobile-qa/ios-device.py",
     "qa:browser": "node scripts/mobile-qa/browser-matrix.mjs",
     "qa:save": "node scripts/mobile-qa/save-upgrade.mjs",
-    "qa:check": "python3 -m unittest discover -s scripts/mobile-qa -p 'test_*.py' && node --check scripts/mobile-qa/browser-matrix.mjs && node --check scripts/mobile-qa/example-scenario.mjs && node --test scripts/mobile-qa/test-save-upgrade.mjs",
+    "qa:check": "python3 -m unittest discover -s scripts/mobile-qa -p 'test_*.py' && node --check scripts/mobile-qa/browser-matrix.mjs && node --check scripts/mobile-qa/example-scenario.mjs && node --test scripts/mobile-qa/test-save-upgrade-support.mjs scripts/mobile-qa/test-save-upgrade.mjs && npm run cloud:check",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "cloud:check": "node --experimental-strip-types --test runtime/taptap/cloud-save.test.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

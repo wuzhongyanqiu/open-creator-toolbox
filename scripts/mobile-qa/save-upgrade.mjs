@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { closeOwnedBrowser, validateOldNetworkExceptions, createOldNetworkPolicy } from './save-upgrade-support.mjs';
 /** Same-origin, old-build-to-candidate save regression. Never approves a release. */
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
@@ -13,7 +14,7 @@ const CATEGORIES = ['progress', 'resources', 'unlocks', 'records'];
 const STORAGE = ['localStorage', 'indexedDB'];
 const HELP = `Same-origin save upgrade regression (browser evidence only)
 Usage: node save-upgrade.mjs --project /absolute/game --old-dir /absolute/old/dist --new-dir /absolute/candidate/dist --scenario /absolute/scenario.mjs --out /absolute/new-output
-Options: --engine chromium|webkit (default chromium), --timeout-ms N (default 20000), --stage-timeout-ms N (default 120000), --help
+Options: --engine chromium|webkit (default chromium), --timeout-ms N (default 20000), --stage-timeout-ms N (default 120000), --cleanup-timeout-ms N (default 20000), --help
 Optional --channel chrome uses already-installed system Google Chrome with the
 chromium engine only. Other channels and WebKit plus channel are rejected.
 Omitting --channel preserves the bundled-engine default. No browser is installed
@@ -38,6 +39,10 @@ unsupported storage values or incomplete IndexedDB reads cannot pass.
 Exit: 0 SAVE_UPGRADE_PASS, 1 observed failure, 2 configuration/dependency error.
 Every report has releaseGate=NOT_EVALUATED; native/platform save migration is separate.
 WebKit is browser-engine H5 evidence, not an iOS Simulator or the iOS TapTap host.
+Cleanup uses its own configurable deadline and records graceful/owned-kill confirmation.
+Known optional old-only 404s require metadata.oldSeedNetworkExceptions entries with
+oldBuildSha256 (old tree hash), exact path, status:404, maxCount and reason.
+No candidate or external failure can use that declaration.
 `;
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 function errorInfo(error, stage) {
@@ -48,19 +53,20 @@ function errorInfo(error, stage) {
   return {stage,type,messageSha256:hash(message)};
 }
 function metadataEvidence(metadata) {
-  return {seedKind:metadata.seedKind,fixtureVersionSha256:metadata.fixtureVersion===null?null:hash(metadata.fixtureVersion),storageTypes:metadata.storageTypes,
+  return {seedKind:metadata.seedKind,fixtureVersionSha256:metadata.fixtureVersion===null?null:hash(metadata.fixtureVersion),storageTypes:metadata.storageTypes,oldSeedNetworkExceptions:metadata.oldSeedNetworkExceptions.map(e=>({oldBuildSha256:e.oldBuildSha256,pathSha256:hash(e.path),status:e.status,maxCount:e.maxCount,reasonSha256:hash(e.reason)})),
     notApplicable:Object.fromEntries(Object.entries(metadata.notApplicable).map(([category,reason])=>[category,{reasonSha256:hash(reason)}]))};
 }
 async function json(file, value) { await writeFile(file, `${JSON.stringify(value, null, 2)}\n`, {mode:0o600}); }
 async function bounded(operation, ms, name) { let timer; try { return await Promise.race([operation, new Promise((_, reject) => {timer=setTimeout(()=>reject(new Error(`${name} timed out after ${ms}ms`)),ms);})]); } finally { clearTimeout(timer); } }
 function args(argv) {
-  const o={timeoutMs:20000,stageTimeoutMs:120000,engine:'chromium'};
-  const map={'--engine':'engine','--channel':'channel','--project':'project','--old-dir':'oldDir','--new-dir':'newDir','--scenario':'scenario','--out':'out','--timeout-ms':'timeoutMs','--stage-timeout-ms':'stageTimeoutMs'};
+  const o={timeoutMs:20000,stageTimeoutMs:120000,cleanupTimeoutMs:20000,engine:'chromium'};
+  const map={'--engine':'engine','--channel':'channel','--project':'project','--old-dir':'oldDir','--new-dir':'newDir','--scenario':'scenario','--out':'out','--timeout-ms':'timeoutMs','--stage-timeout-ms':'stageTimeoutMs','--cleanup-timeout-ms':'cleanupTimeoutMs'};
   for(let i=0;i<argv.length;i++){ if(argv[i]==='--help'){o.help=true;continue;} const key=map[argv[i]]; if(!key||!argv[i+1]||argv[i+1].startsWith('--'))throw new Error('Unknown or incomplete option; use --help.');o[key]=argv[++i]; }
   if(o.help)return o;if(!['chromium','webkit'].includes(o.engine))throw new Error('--engine must be chromium or webkit.');
   if(o.channel!==undefined&&(o.channel!=='chrome'||o.engine!=='chromium'))throw new Error('--channel only accepts chrome with --engine chromium; omit it for bundled engines.');
   for(const k of ['project','oldDir','newDir','scenario','out']){if(!o[k]||!path.isAbsolute(o[k]))throw new Error(`--${Object.entries(map).find(([,v])=>v===k)[0].slice(2)} requires an absolute path.`);o[k]=path.resolve(o[k]);}
-  for(const k of ['timeoutMs','stageTimeoutMs']){o[k]=Number(o[k]);if(!Number.isInteger(o[k])||o[k]<100||o[k]>900000)throw new Error(`${k} must be 100..900000.`);}
+  for(const k of ['timeoutMs','stageTimeoutMs','cleanupTimeoutMs']){o[k]=Number(o[k]);if(!Number.isInteger(o[k])||o[k]<100||o[k]>900000)throw new Error(`${k} must be 100..900000.`);}
+  if(o.cleanupTimeoutMs>120000)throw new Error('cleanupTimeoutMs must be 100..120000.');
   if(path.extname(o.scenario)!=='.mjs')throw new Error('Scenario must be a local .mjs module.');for(const root of [o.oldDir,o.newDir])if(o.out===root||o.out.startsWith(root+path.sep))throw new Error('--out must be outside both immutable build roots.');return o;
 }
 async function treeIdentity(root) {
@@ -72,7 +78,7 @@ function validateMetadata(m) {
   if(!m||!['OLD_UI','SANITIZED_FIXTURE'].includes(m.seedKind)||!Array.isArray(m.storageTypes)||!m.storageTypes.length||m.storageTypes.some(x=>!STORAGE.includes(x))||new Set(m.storageTypes).size!==m.storageTypes.length)throw new Error('Scenario metadata must declare seedKind and supported storageTypes.');
   if(m.seedKind==='SANITIZED_FIXTURE'&&(!m.fixtureVersion||typeof m.fixtureVersion!=='string'))throw new Error('SANITIZED_FIXTURE requires fixtureVersion.');
   const na=m.notApplicable??{};if(Object.entries(na).some(([k,v])=>!CATEGORIES.includes(k)||typeof v!=='string'||!v.trim()))throw new Error('notApplicable requires known categories and nonempty reasons.');
-  if(CATEGORIES.every(k=>na[k]))throw new Error('At least one save category must be applicable.');return {seedKind:m.seedKind,fixtureVersion:m.fixtureVersion??null,storageTypes:m.storageTypes,notApplicable:na};
+  if(CATEGORIES.every(k=>na[k]))throw new Error('At least one save category must be applicable.');return {seedKind:m.seedKind,fixtureVersion:m.fixtureVersion??null,storageTypes:m.storageTypes,notApplicable:na,oldSeedNetworkExceptions:validateOldNetworkExceptions(m.oldSeedNetworkExceptions)};
 }
 function checks(result, metadata) {
   if(!Array.isArray(result?.checks)||!result.checks.length)throw new Error('Every stage must return explicit save checks.');
@@ -106,20 +112,17 @@ async function storageFingerprint(page, storageTypes, timeout){
  },storageTypes),timeout,'Storage fingerprint');
  return {localStorage:data.localStorage.map(([key,value])=>({keySha256:hash(key),bytes:Buffer.byteLength(value??''),sha256:hash(value??'')})),indexedDB:data.indexedDB.map(db=>({nameSha256:hash(db.name),version:db.version,stores:db.stores.map(s=>({nameSha256:hash(s.name),rowCount:s.rows.length,sha256:hash(JSON.stringify(s.rows))}))})),unsupported:data.unsupported};
 }
-async function closeBrowser(browser, server, timeout){const failures=[];for(const [label,op] of [['Browser connection',()=>browser?.close()],['Owned browser',()=>server?.close()]]){try{await bounded(Promise.resolve(op()),timeout,label+' close');}catch{failures.push(label+' close failed');}}
- if(failures.length&&server){try{await bounded(server.kill(),timeout,'Owned browser kill');}catch{const child=server.process();if(child?.pid&&child.exitCode===null&&child.signalCode===null)child.kill('SIGKILL');}}
- return failures;
-}
 async function main(){const o=args(process.argv.slice(2));if(o.help){process.stdout.write(HELP);return;}const metaModule=await import(pathToFileURL(o.scenario).href);const metadata=validateMetadata(metaModule.metadata);for(const key of ['seedOld','assertUpgraded','assertReload'])if(typeof metaModule[key]!=='function')throw new Error(`Scenario missing ${key}.`);
  if(await stat(o.out).then(()=>true,()=>false))throw new Error('--out must not exist; previous evidence is preserved.');await mkdir(o.out,{recursive:true,mode:0o700});
  const report={schemaVersion:1,status:'ERROR',startedAt:new Date().toISOString(),finishedAt:null,evidenceType:'BROWSER_SAME_ORIGIN_SAVE_UPGRADE',browserEngine:o.engine,requestedBrowserChannel:o.channel??null,releaseGate:'NOT_EVALUATED',metadata:metadataEvidence(metadata),scenario:{path:o.scenario,sha256:hash(await readFile(o.scenario))},stages:[],failures:[],limitations:['Only declared browser storage and explicit scenario assertions are covered.','TapTap native storage/cloud/account migration, origin changes, physical devices and prior already-lost data are not verified.','Synthetic fixtures do not prove every historical player save migrates.','Raw baseline, values, cookies and database rows are never written to this report.','WebKit browser evidence does not verify iOS Simulator, iOS TapTap host or physical iPhone behavior.']};
- let browserServer,browser,context,host;let phase='build-identification';
+ let browserServer,browser,context,host,ownedPid,networkPolicy;const consoleErrors=[];let phase='build-identification';
  try{report.builds={old:await treeIdentity(o.oldDir),candidate:await treeIdentity(o.newDir)};let sourceCommit=null;try{sourceCommit=execFileSync('git',['-C',o.project,'rev-parse','HEAD'],{encoding:'utf8',timeout:5000,stdio:['ignore','pipe','ignore']}).trim();}catch{}report.source={project:o.project,checkoutCommit:sourceCommit,buildAssociation:'Build tree hashes are recorded; association with release commits remains a separate check.'};
- phase='browser-setup';const browserType=await loadPlaywright(o.project,o.engine);host=await hostBuilds(report.builds.old.root,report.builds.candidate.root);report.origin=host.origin;
- browserServer=await browserType.launchServer({headless:true,host:'127.0.0.1',timeout:o.timeoutMs,...(o.channel?{channel:o.channel}:{})});browser=await browserType.connect(browserServer.wsEndpoint(),{timeout:o.timeoutMs});report.browser={engine:o.engine,channel:o.channel??'bundled-'+o.engine,version:browser.version()};context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,serviceWorkers:'block',acceptDownloads:false});
+ if(metadata.oldSeedNetworkExceptions.some(e=>e.oldBuildSha256!==report.builds.old.sha256))throw new Error('Old network exception build identity does not match.');
+ phase='browser-setup';const browserType=await loadPlaywright(o.project,o.engine);host=await hostBuilds(report.builds.old.root,report.builds.candidate.root);report.origin=host.origin;networkPolicy=createOldNetworkPolicy(metadata.oldSeedNetworkExceptions,{oldBuildSha256:report.builds.old.sha256,origin:host.origin});
+ browserServer=await browserType.launchServer({headless:true,host:'127.0.0.1',timeout:o.timeoutMs,...(o.channel?{channel:o.channel}:{})});ownedPid=browserServer.process()?.pid;browser=await browserType.connect(browserServer.wsEndpoint(),{timeout:o.timeoutMs});report.browser={engine:o.engine,channel:o.channel??'bundled-'+o.engine,version:browser.version()};context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true,serviceWorkers:'block',acceptDownloads:false});
  if(typeof context.routeWebSocket!=='function')throw new Error('Playwright must support routeWebSocket to enforce complete external-network isolation.');await context.routeWebSocket(/.*/,socket=>{report.failures.push('WebSocket request blocked during isolated migration test');socket.close();});
  await context.route('**/*',async route=>{const u=new URL(route.request().url());if(u.origin!==host.origin){report.failures.push('External request blocked during isolated migration test');await route.abort('blockedbyclient');}else await route.continue();});
- const page=await context.newPage();page.setDefaultTimeout(o.timeoutMs);page.setDefaultNavigationTimeout(o.timeoutMs);page.on('pageerror',()=>report.failures.push('Uncaught page error'));page.on('console',m=>{if(m.type()==='error')report.failures.push('Browser console error');});page.on('response',r=>{if(r.status()>=400)report.failures.push(`HTTP ${r.status()} while serving build`);});
+ const page=await context.newPage();page.setDefaultTimeout(o.timeoutMs);page.setDefaultNavigationTimeout(o.timeoutMs);page.on('pageerror',()=>report.failures.push('Uncaught page error'));const requestPhases=new WeakMap();page.on('request',r=>requestPhases.set(r,phase));page.on('console',m=>{if(m.type()==='error')consoleErrors.push({text:m.text(),url:m.location().url,phase});});page.on('response',r=>{if(r.status()>=400&&!networkPolicy.allowResponse(r.url(),r.status(),requestPhases.get(r.request())??phase))report.failures.push(`HTTP ${r.status()} while serving build`);});
  await page.exposeFunction('__creatorQaStorageClear',()=>{report.failures.push('Storage.clear invoked; migration cannot pass by wiping storage');});await context.addInitScript(()=>{const original=Storage.prototype.clear;Storage.prototype.clear=function(){void globalThis.__creatorQaStorageClear();return original.apply(this,arguments);};});
  let before,oldStorageCounts;
  const storageCounts=fingerprint=>({localStorage:fingerprint.localStorage.length,indexedDB:fingerprint.indexedDB.reduce((total,db)=>total+db.stores.reduce((n,store)=>n+store.rowCount,0),0)});
@@ -129,8 +132,8 @@ async function main(){const o=args(process.argv.slice(2));if(o.help){process.std
  for(let reloadIndex=1;reloadIndex<=2;reloadIndex++){phase='candidate-reload-navigation-'+reloadIndex;await page.reload({waitUntil:'domcontentloaded'});await stage('candidate-reload-'+reloadIndex,()=>metaModule.assertReload({page,before:structuredClone(before),reloadIndex}));}
  report.status=report.failures.length?'FAIL':'SAVE_UPGRADE_PASS';process.exitCode=report.failures.length?1:0;
  phase='final-build-identification';const finalOld=await treeIdentity(o.oldDir),finalCandidate=await treeIdentity(o.newDir);if(finalOld.sha256!==report.builds.old.sha256||finalCandidate.sha256!==report.builds.candidate.sha256)throw new Error('Build files changed during save regression; evidence invalidated');report.builds.unchangedDuringRun=true;
- }catch(error){report.error=errorInfo(error,phase);report.failures.push('Operation failed during '+phase);report.status=report.stages.length?'FAIL':'ERROR';process.exitCode=report.status==='FAIL'?1:2;}finally{const timeout=Math.min(o.timeoutMs,5000);if(context){try{await bounded(context.close(),timeout,'Context close');}catch{report.failures.push('Context close failed');}}
- report.failures.push(...await closeBrowser(browser,browserServer,timeout));if(host)await host.close();if(report.failures.length&&report.status==='SAVE_UPGRADE_PASS'){report.status='FAIL';process.exitCode=1;}report.finishedAt=new Date().toISOString();await json(path.join(o.out,'report.json'),report);process.stdout.write(`${report.status}; releaseGate=NOT_EVALUATED\nReport: ${path.join(o.out,'report.json')}\n`);}
+ }catch(error){report.error=errorInfo(error,phase);report.failures.push('Operation failed during '+phase);report.status=report.stages.length?'FAIL':'ERROR';process.exitCode=report.status==='FAIL'?1:2;}finally{const timeout=o.cleanupTimeoutMs;report.cleanup={timeoutMs:timeout,context:'not-created'};if(context){try{await bounded(context.close(),timeout,'Context close');report.cleanup.context='closed';}catch{report.cleanup.context='close-timeout-or-error';}}
+ const cleanup=await closeOwnedBrowser(browser,browserServer,{timeoutMs:timeout,ownedPid});report.cleanup.browser=cleanup.evidence;report.failures.push(...cleanup.failures);if(host){try{await bounded(host.close(),timeout,'Loopback server close');report.cleanup.host='closed';}catch{report.cleanup.host='unconfirmed';report.failures.push('Loopback server close failed');}}for(const message of consoleErrors)if(!networkPolicy?.allowConsole(message))report.failures.push('Browser console error');if(networkPolicy)report.oldNetworkExceptions=networkPolicy.evidence(hash);if(report.failures.length&&report.status==='SAVE_UPGRADE_PASS'){report.status='FAIL';process.exitCode=1;}report.finishedAt=new Date().toISOString();await json(path.join(o.out,'report.json'),report);process.stdout.write(`${report.status}; releaseGate=NOT_EVALUATED\nReport: ${path.join(o.out,'report.json')}\n`);}
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))main().catch(error=>{const info=errorInfo(error,'configuration');process.stderr.write(`Save upgrade configuration failed (${info.type}); error SHA256: ${info.messageSha256}\n`);process.exitCode=2;});
-export { checks, validateMetadata, args as parseArgs };
+export { checks, validateMetadata, args as parseArgs, closeOwnedBrowser, createOldNetworkPolicy };
